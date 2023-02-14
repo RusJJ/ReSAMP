@@ -1,0 +1,147 @@
+#ifndef __SAMPRPC_H
+#define __SAMPRPC_H
+
+#define DEFRPC(__id, __name) const int     RPC_##__name = __id
+#define ONRPC(__name)        static void RPC_On##__name(RPCParameters* params)
+#define BINDRPC(__name)      if(bUnregister)  samp->GetRakClient()->UnregisterAsRemoteProcedureCall((int*)&RPC_##__name); \
+                             else samp->GetRakClient()->RegisterAsRemoteProcedureCall((int*)&RPC_##__name, RPC_On##__name)
+
+class SAMPRPC
+{
+public:
+    static void DoRPCs(bool bUnregister);
+};
+
+DEFRPC(11,  SetPlayerName);
+DEFRPC(12,  SetPlayerPos);
+DEFRPC(13,  SetPlayerPosFindZ);
+DEFRPC(14,  SetPlayerHealth);
+DEFRPC(15,  TogglePlayerControllable);
+DEFRPC(16,  PlayerPlaySound);
+DEFRPC(17,  SetPlayerWorldBounds);
+DEFRPC(18,  GivePlayerMoney);
+DEFRPC(19,  SetPlayerFacingAngle);
+DEFRPC(20,  ResetPlayerMoney);
+DEFRPC(21,  ResetPlayerWeapons);
+DEFRPC(22,  GivePlayerWeapon);
+DEFRPC(23,  ClickPlayer);
+DEFRPC(24,  VehicleParamsEx);
+DEFRPC(25,  ClientJoin);
+DEFRPC(26,  EnterVehicle);
+DEFRPC(27,  EnterEditObject);
+DEFRPC(29,  SetTimeEx);
+DEFRPC(30,  ToggleClock);
+DEFRPC(32,  WorldPlayerAdd);
+DEFRPC(35,  SetPlayerDrunkLevel);
+DEFRPC(36,  Create3DTextLabel);
+DEFRPC(37,  DisableCheckpoint);
+DEFRPC(38,  SetRaceCheckpoint);
+DEFRPC(39,  DisableRaceCheckpoint);
+DEFRPC(40,  GameModeRestart);
+DEFRPC(41,  PlayAudioStream);
+DEFRPC(42,  StopAudioStream);
+DEFRPC(43,  RemovePlayerBuilding);
+DEFRPC(44,  CreateObject);
+DEFRPC(45,  SetObjectPos);
+DEFRPC(46,  SetObjectRotation);
+DEFRPC(47,  DestroyObject);
+DEFRPC(50,  ServerCommand);
+DEFRPC(52,  Spawn);
+DEFRPC(53,  Death);
+DEFRPC(54,  NPCJoin);
+DEFRPC(55,  DeathMessage);
+DEFRPC(56,  SetMapIcon);
+DEFRPC(57,  RemoveVehicleComponent);
+DEFRPC(60,  PlayerUpdate);
+DEFRPC(61,  DialogBox);
+DEFRPC(62,  DialogResponse);
+DEFRPC(63,  DestroyPickup);
+DEFRPC(65,  LinkVehicleToInterior);
+DEFRPC(66,  SetPlayerArmour);
+DEFRPC(68,  SetSpawnInfo);
+DEFRPC(69,  SetPlayerTeam);
+DEFRPC(70,  PutPlayerInVehicle);
+DEFRPC(71,  RemovePlayerFromVehicle);
+DEFRPC(72,  SetPlayerColor);
+DEFRPC(73,  DisplayGameText);
+DEFRPC(74,  ForceSpawnSelection);
+DEFRPC(75,  AttachObjectToPlayer);
+DEFRPC(76,  InitMenu);
+DEFRPC(77,  ShowMenu);
+DEFRPC(78,  HideMenu);
+DEFRPC(79,  CreateExplosion);
+DEFRPC(80,  ShowNameTag);
+DEFRPC(83,  ClickTextDraw);
+DEFRPC(85,  GangZoneStopFlash);
+DEFRPC(86,  ApplyAnimation);
+DEFRPC(87,  ClearAnimations);
+DEFRPC(88,  SetSpecialAction);
+DEFRPC(89,  SetFightingStyle);
+DEFRPC(90,  SetPlayerVelocity);
+DEFRPC(91,  SetVehicleVelocity);
+DEFRPC(93,  ClientMessage);
+DEFRPC(94,  WorldTime);
+DEFRPC(95,  Pickup);
+DEFRPC(96,  ScmEvent);
+DEFRPC(97,  DestroyWeaponPickup);
+DEFRPC(99,  MoveObject);
+DEFRPC(101, Chat);
+DEFRPC(102, SvrStats);
+DEFRPC(104, EnableStuntBonus);
+DEFRPC(105, EditTextDraw);
+DEFRPC(106, DamageVehicle);
+DEFRPC(107, SetCheckpoint);
+DEFRPC(108, AddGangZone);
+DEFRPC(115, PlayerGiveTakeDamage);
+DEFRPC(117, EditObject);
+DEFRPC(118, SetInteriorId);
+DEFRPC(119, MapMarker);
+DEFRPC(120, RemoveGangZone);
+DEFRPC(121, GangZoneFlash);
+DEFRPC(122, StopObject);
+DEFRPC(123, NumberPlate);
+DEFRPC(124, TogglePlayerSpectating);
+DEFRPC(126, PlayerSpectatePlayer);
+DEFRPC(127, PlayerSpectateVehicle);
+DEFRPC(128, RequestClass);
+DEFRPC(129, RequestSpawn);
+DEFRPC(130, ConnectionRejected);
+DEFRPC(131, PickedUpPickup);
+DEFRPC(132, MenuSelect);
+DEFRPC(133, SetPlayerWantedLevel);
+DEFRPC(134, ShowTextDraw);
+DEFRPC(135, HideTextDraw);
+DEFRPC(136, VehicleDestroyed);
+DEFRPC(137, ServerJoin);
+DEFRPC(138, ServerQuit);
+DEFRPC(139, InitGame);
+DEFRPC(140, MenuQuit);
+DEFRPC(144, DisableMapIcon);
+DEFRPC(145, SetWeaponAmmo);
+DEFRPC(146, SetGravity);
+DEFRPC(147, SetVehicleHealth);
+DEFRPC(148, AttachTrailerToVehicle);
+DEFRPC(149, DetachTrailerFromVehicle);
+DEFRPC(152, Weather);
+DEFRPC(153, SetPlayerSkin);
+DEFRPC(154, ExitVehicle);
+DEFRPC(155, UpdateScoresPingsIPs);
+DEFRPC(156, SetInterior);
+DEFRPC(157, SetCameraPos);
+DEFRPC(158, SetCameraLookAt);
+DEFRPC(159, SetVehiclePos);
+DEFRPC(160, SetVehicleZAngle);
+DEFRPC(161, VehicleParams);
+DEFRPC(162, SetCameraBehindPlayer);
+DEFRPC(163, WorldPlayerRemove);
+DEFRPC(164, WorldVehicleAdd);
+DEFRPC(165, WorldVehicleRemove);
+DEFRPC(166, WorldPlayerDeath);
+DEFRPC(255, AdminMapTeleport);
+DEFRPC(255, PickedUpWeapon);
+DEFRPC(255, RespawnVehicle);
+DEFRPC(255, SetPlayerSpectating);
+DEFRPC(255, ToggleWidescreen);
+DEFRPC(255, SetVehicleTireStatus);
+
+#endif // __SAMPRPC_H
