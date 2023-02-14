@@ -98,9 +98,9 @@ ONRPC(GivePlayerWeapon)
     int iWeaponID;
     int iAmmo;
     bsData.Read(iWeaponID);
-	bsData.Read(iAmmo);
+    bsData.Read(iAmmo);
     
-    
+    Game::GiveWeapon(iWeaponID, iAmmo, true);
 }
 ONRPC(SetTimeEx)
 {
@@ -227,6 +227,26 @@ ONRPC(CreateObject)
     CALLSCM(CREATE_OBJECT, ModelID, vecPos.x, vecPos.y, vecPos.z, &dwRetID);
     CALLSCM(SET_OBJECT_ROTATION, dwRetID, vecRot.x, vecRot.y, vecRot.z);
 }
+ONRPC(SetMapIcon)
+{
+    RAKDATA(params);
+    
+    uint8_t byteIndex;
+    uint8_t byteIcon;
+    uint32_t iColor;
+    CVector pos;
+
+    bsData.Read(byteIndex);
+    bsData.Read(pos.x);
+    bsData.Read(pos.y);
+    bsData.Read(pos.z);
+    bsData.Read(byteIcon);
+	bsData.Read(iColor);
+    
+    CRemoteMapIcon* m = Game::m_pMapIconPool->AllocAt(byteIndex);
+    m->m_nID = byteIndex;
+    m->m_nGtaID = Game::CreateRadarMarkerIcon(0, pos.x, pos.y, pos.z, iColor, byteIcon);
+}
 ONRPC(SetPlayerArmour)
 {
     RAKDATA(params);
@@ -341,6 +361,15 @@ ONRPC(InitGame)
     Game::ToggleCJWalk(samp->GetServerVars().m_bUseCJWalk);
     CLocalPlayer::OnConnected();
 }
+ONRPC(DisableMapIcon)
+{
+    RAKDATA(params);
+    
+    uint8_t byteIndex;
+    bsData.Read(byteIndex);
+    
+    CALLSCM(REMOVE_BLIP, Game::m_pMapIconPool->GetAt(byteIndex)->m_nGtaID);
+}
 ONRPC(Weather)
 {
     RAKDATA(params);
@@ -424,14 +453,16 @@ ONRPC(WorldVehicleRemove)
     
     unsigned short vehId;
     bsData.Read(vehId);
+    CRemoteVehicle* v = Game::m_pVehiclePool->GetAt(vehId);
     
-    CALLSCM(DELETE_CAR, Game::m_pVehiclePool->GetAt(vehId)->m_nGtaID);
-    Game::m_pVehiclePool->Remove(Game::m_pVehiclePool->GetAt(vehId));
+    if(v->m_nMarkerID) CALLSCM(REMOVE_BLIP, v->m_nMarkerID);
+    CALLSCM(DELETE_CAR, v->m_nGtaID);
+    Game::m_pVehiclePool->Remove(v);
 }
 
 void SAMPRPC::DoRPCs(bool bUnregister)
 {
-    if(bUnregister) logger->Info("Initializing RPCs...");
+    if(!bUnregister) logger->Info("Initializing RPCs...");
     else logger->Info("Shutting down RPCs...");
 
     BINDRPC(SetPlayerPos); // 12
@@ -450,12 +481,14 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(SetPlayerDrunkLevel); // 35
     BINDRPC(RemovePlayerBuilding); // 43
     BINDRPC(CreateObject); // 44
+    BINDRPC(SetMapIcon); // 56
     BINDRPC(SetPlayerArmour); // 66
     BINDRPC(SetSpawnInfo); // 68
     BINDRPC(DisplayGameText); // 73
     BINDRPC(RequestClass); // 128
     BINDRPC(RequestSpawn); // 129
     BINDRPC(InitGame); // 139
+    BINDRPC(DisableMapIcon); // 144
     BINDRPC(Weather); // 152
     BINDRPC(SetInterior); // 156
     BINDRPC(SetCameraPos); // 157

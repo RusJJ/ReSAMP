@@ -5,6 +5,7 @@
 
 #include "patch/pad.h"
 #include "remoteplayer.h"
+#include <game/localplayer.h>
 
 CRemotePlayer::CRemotePlayer()
 {
@@ -17,7 +18,13 @@ CRemotePlayer::CRemotePlayer()
 
 void CRemotePlayer::Update()
 {
-
+    if(m_bIsLocal)
+    {
+        CLocalPlayer::Update();
+        return;
+    }
+    
+    
 }
 
 bool CRemotePlayer::IsActive()

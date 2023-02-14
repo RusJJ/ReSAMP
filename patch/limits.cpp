@@ -160,4 +160,8 @@ __attribute__((optnone)) __attribute__((naked)) void VehiclePool_Reconstruct_stu
 void DoPoolsPatches()
 {
     aml->Redirect(pGTASA + 0x468B76 + 0x1, (uintptr_t)VehiclePool_Reconstruct_stub);
+    // TXDs
+    aml->Write(pGTASA + 0x5D3A68, (uintptr_t)"\x42\xF2\x10\x70", 4);
+    aml->Write(pGTASA + 0x5D3A6C, (uintptr_t)"\x42\xF2\x10\x75", 4);
+    aml->Write(pGTASA + 0x5D3A5A, (uintptr_t)"\x48\xF6\c80\x30\xC0\xF2\x08\x00", 8);
 }

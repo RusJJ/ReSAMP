@@ -45,7 +45,7 @@ bool Game::m_bDisableWidgets = false;
 JPoolCalcHighest<CRemotePlayer>* Game::m_pPlayerPool = NULL;
 JPoolCalcHighest<CRemoteVehicle>* Game::m_pVehiclePool = NULL;
 JPoolCalcHighest<CRemoteObject>* Game::m_pObjectPool = NULL;
-
+JPoolCalcHighest<CRemoteMapIcon>* Game::m_pMapIconPool = NULL;
 
 
 void Game::InitializeGameClass()
@@ -80,6 +80,7 @@ void Game::InitializeGameClass()
     m_pPlayerPool = new JPoolCalcHighest<CRemotePlayer>(MAX_PLAYERS);
     m_pVehiclePool = new JPoolCalcHighest<CRemoteVehicle>(MAX_VEHICLES);
     m_pObjectPool = new JPoolCalcHighest<CRemoteObject>(MAX_OBJECTS);
+    m_pMapIconPool = new JPoolCalcHighest<CRemoteMapIcon>(MAX_MAPICONS);
 
     // Pool Getters
     SET_TO(GetVehicleById,             aml->GetSym(hGTASA, "_ZN6CPools10GetVehicleEi"));
@@ -142,6 +143,7 @@ CRemoteVehicle* Game::CreateVehicle(int id, int type, float x, float y, float z,
 CRemoteVehicle* Game::CreateVehicle(VehicleData& data)
 {
     CRemoteVehicle* vehicle = m_pVehiclePool->AllocAt(data.VehicleID, true);
+    vehicle->m_nMarkerID = 0;
     vehicle->data = data;
     vehicle->m_nID = data.VehicleID;
     int modelId = data.iVehicleType;
@@ -169,6 +171,10 @@ CRemoteVehicle* Game::CreateVehicle(VehicleData& data)
         if( vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_BIKE && vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_PUSHBIKE)
             vehicle->m_pEntity->GetPosition().z = data.vecPos.z + 0.25f;
     }
+    
+    CALLSCM(ADD_BLIP_FOR_CAR_OLD, vehicle->m_nGtaID, 1, 2, &vehicle->m_nMarkerID);
+    CALLSCM(CHANGE_BLIP_COLOUR, vehicle->m_nMarkerID, 200);
+    
     return vehicle;
 }
 
@@ -404,7 +410,7 @@ uint16_t Game::GetSAMPVehID(CVehicle* v)
     int maxvehicles = Game::m_pVehiclePool->GetHighestSlotUsedEver();
     for(uint16_t i = 0; i < maxvehicles; ++i)
     {
-        if(Game::m_pVehiclePool->GetAt(i)->m_pEntity == v) return i;
+        if(Game::m_pVehiclePool->IsSlotOccupied(i) && Game::m_pVehiclePool->GetAt(i)->m_pEntity == v) return i;
     }
     return 0xFFFF;
 }
@@ -419,4 +425,33 @@ void Game::ToggleCJWalk(bool enable)
     {
         aml->PlaceNOP(pGTASA + 0x4C5EFA + 0x1, 2);
     }
+}
+
+uint32_t Game::CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle)
+{
+    uint32_t dwMarkerID = 0;
+
+    if(iStyle == 1) 
+        CALLSCM(ADD_SPRITE_BLIP_FOR_COORD, fX, fY, fZ, iMarkerType, &dwMarkerID);
+    else if(iStyle == 2) 
+        CALLSCM(ADD_SHORT_RANGE_SPRITE_BLIP_FOR_CONTACT_POINT, fX, fY, fZ, iMarkerType, &dwMarkerID);
+    else if(iStyle == 3) 
+        CALLSCM(ADD_SPRITE_BLIP_FOR_CONTACT_POINT, fX, fY, fZ, iMarkerType, &dwMarkerID);
+    else 
+        CALLSCM(ADD_SHORT_RANGE_SPRITE_BLIP_FOR_COORD, fX, fY, fZ, iMarkerType, &dwMarkerID);
+
+    if(iMarkerType == 0)
+    {
+        if(iColor >= 1004)
+        {
+            CALLSCM(CHANGE_BLIP_COLOUR, dwMarkerID, iColor);
+            CALLSCM(CHANGE_BLIP_SCALE, dwMarkerID, 3);
+        }
+        else
+        {
+            CALLSCM(CHANGE_BLIP_COLOUR, dwMarkerID, iColor);
+            CALLSCM(CHANGE_BLIP_SCALE, dwMarkerID, 2);
+        }
+    }
+    return dwMarkerID;
 }

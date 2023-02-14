@@ -30,5 +30,6 @@ extern CSAPool* pNodeRoutePool;
 extern CSAPool* pTaskAllocatorPool;
 extern CSAPool* pPedIntelligencePool;
 extern CSAPool* pPedAttractorPool;
+extern CSAPool* pTxdPool;
 
 #endif // __SAPOOL_H

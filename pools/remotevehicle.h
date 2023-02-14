@@ -22,6 +22,7 @@ public:
     
     int m_nID;
     int m_nGtaID;
+    int m_nMarkerID;
     CVehicle* m_pEntity;
     bool m_bDoorsLocked;
 };

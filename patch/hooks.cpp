@@ -177,6 +177,13 @@ __attribute__((optnone)) __attribute__((naked)) void EnterCarAsDriver_inject()
     :: "r" (EnterCarAsDriver_BackTo));
 }
 
+uint32_t TranslateColorCodeToRGBA(uint32_t);
+DECL_HOOK(uint32_t, GetRadarTraceColour, uint32_t code, uint8_t, uint8_t)
+{
+    logger->Info("colaar");
+    return TranslateColorCodeToRGBA(code);
+}
+
 void HookFunctions()
 {
     // IMG
@@ -201,7 +208,7 @@ void HookFunctions()
     // Other things
     HOOKPLT(LoadObjectInstance, pGTASA + 0x675E6C);
     aml->PlaceRET(aml->GetSym(hGTASA, "_ZN11CPopulation25GeneratePedsAtStartOfGameEv"));
-    
+    HOOK(GetRadarTraceColour, aml->GetSym(hGTASA, "_ZN6CRadar19GetRadarTraceColourEjhh"));
     
 }
 

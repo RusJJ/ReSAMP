@@ -7,6 +7,7 @@
 #include <pools/remoteplayer.h>
 #include <pools/remotevehicle.h>
 #include <pools/remoteobject.h>
+#include <pools/remotemapicon.h>
 
 #define MAX_BUILDINGS_TO_REMOVE  1000
 
@@ -96,6 +97,7 @@ public:
     static bool IsBuildingRemoved(int modelId, float x, float y, float z);
     static uint16_t GetSAMPVehID(CVehicle* v);
     static void ToggleCJWalk(bool enable);
+    static uint32_t CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle);
 
     static inline uint32_t GetTick()
     {
@@ -111,6 +113,7 @@ public:
     static JPoolCalcHighest<CRemotePlayer>*  m_pPlayerPool;
     static JPoolCalcHighest<CRemoteVehicle>* m_pVehiclePool;
     static JPoolCalcHighest<CRemoteObject>*  m_pObjectPool;
+    static JPoolCalcHighest<CRemoteMapIcon>* m_pMapIconPool;
 };
 
 #endif // __SAGAME_H

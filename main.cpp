@@ -41,3 +41,8 @@ extern "C" void OnAllModsLoaded()
 {
     HookFunctionsLate();
 }
+
+extern "C" void OnModUnload()
+{
+    SAMPRPC::DoRPCs(true);
+}

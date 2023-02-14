@@ -149,6 +149,7 @@ void SAMPNet::Update()
     ProcessPackets();
     Game::SetWorldTime(m_vars.m_byteWorldHour, m_vars.m_byteWorldMinute);
     Game::SetWeather(m_vars.m_byteWeather);
+    
     if(GetGameState() != GAMESTATE_CONNECTED && !m_bStartedForConnecting)
     {
         m_bStartedForConnecting = true;
