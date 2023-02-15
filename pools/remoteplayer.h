@@ -33,6 +33,7 @@ private:
 
     int m_nID;
     int m_nGtaID;
+    uint32_t m_nMarkerID;
     CPlayerPed* m_pEntity;
 
     ONFOOT_SYNC_DATA    m_ofSync;

@@ -6,7 +6,7 @@
 #include <gtasa.h>
 #include <sampnet/samp_syncdata.h>
 
-
+class CRemotePlayer;
 
 class CLocalPlayer
 {
@@ -36,8 +36,12 @@ public:
     static bool                 m_bWaitingToSpawn;
     static bool                 m_bWasInCar;
     static uint16_t             m_nLastSAMPVehId;
+    static uint8_t              m_byteLastInteriorId;
+    static bool                 m_bWasted;
+    static bool                 m_bClassChangeRequested;
     
 private:
+    static CRemotePlayer*       m_pRemote;
     static short                m_nChosenClassId;
     static int                  m_nID;
     static int                  m_nGtaID;

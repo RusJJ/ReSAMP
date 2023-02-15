@@ -12,7 +12,12 @@ bool CLocalPlayer::m_bDisableControls = false;
 bool CLocalPlayer::m_bWaitingToSpawn = false;
 bool CLocalPlayer::m_bWasInCar = false;
 uint16_t CLocalPlayer::m_nLastSAMPVehId = 0xFFFF;
+uint8_t CLocalPlayer::m_byteLastInteriorId = 0;
+bool CLocalPlayer::m_bWasted = false;
+bool CLocalPlayer::m_bClassChangeRequested = false;
+
 short CLocalPlayer::m_nChosenClassId = 0;
+CRemotePlayer* CLocalPlayer::m_pRemote = NULL;
 int CLocalPlayer::m_nID = -1;
 int CLocalPlayer::m_nGtaID = -1;
 CPlayerPed* CLocalPlayer::m_pEntity = NULL;
@@ -38,15 +43,52 @@ void CLocalPlayer::PutMeInPool(int id)
 {
     m_nID = id;
     m_pEntity = Game::GetPlayerByGtaID(m_nGtaID);
-    CRemotePlayer* p = Game::m_pPlayerPool->AllocAt(id, true);
-    p->m_pEntity = m_pEntity;
-    p->m_nGtaID = m_nGtaID;
-    p->m_nID = m_nID;
+    m_pRemote = Game::m_pPlayerPool->AllocAt(id, true);
+    m_pRemote->m_pEntity = m_pEntity;
+    m_pRemote->m_nGtaID = m_nGtaID;
+    m_pRemote->m_nID = m_nID;
+    m_pRemote->m_byteState = PLAYER_STATE_SPAWNED;
 }
 
 void CLocalPlayer::Update()
 {
     m_nTick = Game::GetTick();
+    
+    if(m_byteLastInteriorId != m_pEntity->m_nInterior)
+    {
+        m_byteLastInteriorId = m_pEntity->m_nInterior;
+        
+        RakNet::BitStream bsSend;
+        bsSend.Write(m_byteLastInteriorId);
+        samp->GetRakClient()->RPC((int*)&RPC_SetInteriorId, &bsSend, HIGH_PRIORITY, RELIABLE_SEQUENCED, 0,false, UNASSIGNED_NETWORK_ID, nullptr);
+    }
+    
+    if(!m_bWasted)
+    {
+        if(m_pEntity->IsDead() || m_pEntity->ActionWasted())
+        {
+            m_bWasted = true;
+            
+            RakNet::BitStream bsSend;
+            bsSend.Write(m_byteLastInteriorId);
+            samp->GetRakClient()->RPC((int*)&RPC_Death, &bsSend, HIGH_PRIORITY, RELIABLE_SEQUENCED, 0,false, UNASSIGNED_NETWORK_ID, nullptr);
+        }
+    }
+    else
+    {
+        if(m_pEntity->IsAlive() && m_pEntity->m_fHealth > 0)
+        {
+            if(m_bClassChangeRequested)
+            {
+                
+            }
+            else
+            {
+                CLocalPlayer::Spawn();
+            }
+            m_bWasted = false;
+        }
+    }
 
     if(m_pEntity->IsInAnyVehicle())
     {
@@ -102,6 +144,7 @@ void CLocalPlayer::Spawn()
     CALLSCM(ADD_HOSPITAL_RESTART, m_SpawnInfo.vecPos.x, m_SpawnInfo.vecPos.y, m_SpawnInfo.vecPos.z, m_SpawnInfo.fRotation, 0);
     CALLSCM(RESTORE_CAMERA_JUMPCUT);
     m_bDisableControls = false;
+    m_bWasted = false;
     
     // Hey server, we're spawned!
     RakNet::BitStream bsSpawnRequest;

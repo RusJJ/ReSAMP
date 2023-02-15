@@ -13,23 +13,21 @@ CRemotePlayer::CRemotePlayer()
     m_byteState = PLAYER_STATE_NONE;
     m_nID = -1;
     m_nGtaID = -1;
+    m_nMarkerID = -1;
     m_pEntity = NULL;
 }
 
 void CRemotePlayer::Update()
 {
-    if(m_bIsLocal)
+    if(m_nMarkerID >= 0)
     {
-        CLocalPlayer::Update();
-        return;
+        
     }
-    
-    
 }
 
 bool CRemotePlayer::IsActive()
 {
-    return (m_bIsLocal == false && m_pEntity != NULL && m_byteState != PLAYER_STATE_NONE);
+    return (!m_bIsLocal && m_pEntity != NULL && m_byteState != PLAYER_STATE_NONE);
 }
 
 void CRemotePlayer::SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog)

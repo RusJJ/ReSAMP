@@ -14,6 +14,7 @@
 #define MAX_PLAYERS             1004
 #define MAX_VEHICLES            2000
 #define MAX_OBJECTS             1000
+#define MAX_MAPICONS            100
 #define MAX_PICKUPS             4096
 #define MAX_PLAYER_NAME         24
 

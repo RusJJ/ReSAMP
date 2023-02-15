@@ -29,6 +29,7 @@ static float* fGravity;
 // Game::RemoveBuilding
 static uintptr_t PlaceableVtable;
 static void (*DestructBuildingPtr)(CPlaceable*);
+static void (*DestructDummyPtr)(CPlaceable*);
 // Pool Getters
 CVehicle* (*GetVehicleById)(int);
 CPlayerPed* (*GetPoolPed)(int);
@@ -75,6 +76,7 @@ void Game::InitializeGameClass()
     // Game::RemoveBuilding
     SET_TO(PlaceableVtable,            pGTASA + 0x667D24);
     SET_TO(DestructBuildingPtr,        pGTASA + 0x28021C + 0x1);
+    SET_TO(DestructDummyPtr,           pGTASA + 0x3EADB0 + 0x1);
 
     // Pools
     m_pPlayerPool = new JPoolCalcHighest<CRemotePlayer>(MAX_PLAYERS);
@@ -116,6 +118,12 @@ void Game::ShowWidgets(bool enabled)
 
 CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, float rot, bool createMarker)
 {
+    if(id == 0) // Create local player???
+    {
+        // This may happen if we loaded in a non-empty server
+        // So there's player with id 0
+        id = CLocalPlayer::GetID();
+    }
     CRemotePlayer* player = m_pPlayerPool->AllocAt(id, true);
     player->m_nID = id;
     CALLSCM(CREATE_PLAYER, &player->m_nID, x, y, z, &player->m_nGtaID);
@@ -307,24 +315,26 @@ void Game::RemoveBuilding(int modelId, float x, float y, float z, float radius)
     g_RemoveBuilding[g_nRemovedBuildings] = b;
     ++g_nRemovedBuildings;
 
-    CPlaceable* foundEnt;
+    CBuilding* foundEnt;
     int i;
     if(modelId == -1)
     {
         for(i = 0; i < POOL_BUILDINGS_COUNT; ++i)
         {
-            foundEnt = (CPlaceable*)((uintptr_t)pBuildingPool->objects + 60 * i);
+            foundEnt = (CBuilding*)((uintptr_t)pBuildingPool->objects + 60 * i);
             if(foundEnt && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
             {
-                DestructBuildingPtr(foundEnt);
+                //DestructBuildingPtr(foundEnt);
+                foundEnt->m_nModelIndex = 19300;
             }
         }
         for(i = 0; i < POOL_DUMMIES_COUNT; ++i)
         {
-            foundEnt = (CPlaceable*)((uintptr_t)pDummyPool->objects + 60 * i);
+            foundEnt = (CBuilding*)((uintptr_t)pDummyPool->objects + 60 * i);
             if(foundEnt && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
             {
-                DestructBuildingPtr(foundEnt);
+                //DestructDummyPtr(foundEnt);
+                foundEnt->m_nModelIndex = 19300;
             }
         }
     }
@@ -332,18 +342,20 @@ void Game::RemoveBuilding(int modelId, float x, float y, float z, float radius)
     {
         for(i = 0; i < POOL_BUILDINGS_COUNT; ++i)
         {
-            foundEnt = (CPlaceable*)((uintptr_t)pBuildingPool->objects + 60 * i);
-            if(foundEnt && *(unsigned short*)((uintptr_t)foundEnt + 38) == modelId && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
+            foundEnt = (CBuilding*)((uintptr_t)pBuildingPool->objects + 60 * i);
+            if(foundEnt && foundEnt->m_nModelIndex == modelId && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
             {
-                DestructBuildingPtr(foundEnt);
+                //DestructBuildingPtr(foundEnt);
+                foundEnt->m_nModelIndex = 19300;
             }
         }
         for(i = 0; i < POOL_DUMMIES_COUNT; ++i)
         {
-            foundEnt = (CPlaceable*)((uintptr_t)pDummyPool->objects + 60 * i);
-            if(foundEnt && *(unsigned short*)((uintptr_t)foundEnt + 38) == modelId && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
+            foundEnt = (CBuilding*)((uintptr_t)pDummyPool->objects + 60 * i);
+            if(foundEnt && foundEnt->m_nModelIndex == modelId && DistanceBetweenPoints(x, y, z, foundEnt->GetPosition()) <= radius)
             {
-                DestructBuildingPtr(foundEnt);
+                //DestructDummyPtr(foundEnt);
+                foundEnt->m_nModelIndex = 19300;
             }
         }
     }
