@@ -27,7 +27,7 @@ public:
     bool IsActive();
     void SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog);
 
-private:
+public:
     bool m_bIsLocal;
     unsigned char m_byteState;
 
@@ -41,9 +41,6 @@ private:
     PASSENGER_SYNC_DATA m_psSync;
     AIM_SYNC_DATA       m_aimSync;
     TRAILER_SYNC_DATA   m_trSync;
-
-    friend class Game;
-    friend class CLocalPlayer;
 };
 
 #endif // __REMOTEPLAYER_H

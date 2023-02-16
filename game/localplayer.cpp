@@ -48,6 +48,7 @@ void CLocalPlayer::PutMeInPool(int id)
     m_pRemote->m_nGtaID = m_nGtaID;
     m_pRemote->m_nID = m_nID;
     m_pRemote->m_byteState = PLAYER_STATE_SPAWNED;
+    m_pRemote->m_bIsLocal = true; // Did i just really forgot that?
 }
 
 void CLocalPlayer::Update()

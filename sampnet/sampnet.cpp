@@ -130,6 +130,90 @@ DEFPAK(35, FailedToAuth)
     Message("Failed to initialize encryption.");
     SetGameState(GAMESTATE_DISCONNECTED);
 }
+DEFPAK(207, PlayerSync)
+{
+    if(GetGameState() != GAMESTATE_CONNECTED) return;
+    Message("Player syncing...");
+    
+    RakNet::BitStream bsPlayerSync((unsigned char *)pak->data, pak->length, false);
+    
+    uint8_t bytePacketID;
+    uint16_t playerId;
+
+    bool bHasLR,bHasUD;
+    bool bHasVehicleSurfingInfo;
+
+    bsPlayerSync.Read(bytePacketID);
+    bsPlayerSync.Read(playerId);
+    
+    logger->Info("PlayerSync %d", (int)playerId);
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(playerId);
+    if(!p || p->m_bIsLocal) return; // bruh
+    
+    p->m_byteState = PLAYER_STATE_ONFOOT;
+    ONFOOT_SYNC_DATA& ofSync = p->m_ofSync;
+    memset(&p->m_ofSync, 0, sizeof(ONFOOT_SYNC_DATA));
+    
+    // LEFT/RIGHT KEYS
+    bsPlayerSync.Read(bHasLR);
+    if(bHasLR) bsPlayerSync.Read(ofSync.lrAnalog);
+
+    // UP/DOWN KEYS
+    bsPlayerSync.Read(bHasUD);
+    if(bHasUD) bsPlayerSync.Read(ofSync.udAnalog);
+
+    // GENERAL KEYS
+    bsPlayerSync.Read(ofSync.wKeys);
+
+    // VECTOR POS
+    bsPlayerSync.Read((char*)&ofSync.vecPos,sizeof(CVector));
+
+    // QUATERNION
+    float tw, tx, ty, tz;
+    bsPlayerSync.ReadNormQuat(tw, tx, ty, tz);
+    ofSync.quat.w = tw;
+    ofSync.quat.x = tx;
+    ofSync.quat.y = ty;
+    ofSync.quat.z = tz;
+
+    // HEALTH/ARMOUR (COMPRESSED INTO 1 BYTE)
+    uint8_t byteHealthArmour;
+    uint8_t byteArmTemp=0,byteHlTemp=0;
+
+    bsPlayerSync.Read(byteHealthArmour);
+    byteArmTemp = (byteHealthArmour & 0x0F);
+    byteHlTemp = (byteHealthArmour >> 4);
+
+    if(byteArmTemp == 0xF) ofSync.byteArmour = 100;
+    else if(byteArmTemp == 0) ofSync.byteArmour = 0;
+    else ofSync.byteArmour = byteArmTemp * 7;
+
+    if(byteHlTemp == 0xF) ofSync.byteHealth = 100;
+    else if(byteHlTemp == 0) ofSync.byteHealth = 0;
+    else ofSync.byteHealth = byteHlTemp * 7;
+
+    // CURRENT WEAPON
+    bsPlayerSync.Read(ofSync.byteCurrentKeyAndWeapon);
+    // SPECIAL ACTION
+    bsPlayerSync.Read(ofSync.byteSpecialAction);
+
+    // READ MOVESPEED VECTORS
+    bsPlayerSync.ReadVector(tx, ty, tz);
+    ofSync.vecMoveSpeed.x = tx;
+    ofSync.vecMoveSpeed.y = ty;
+    ofSync.vecMoveSpeed.z = tz;
+
+    bsPlayerSync.Read(bHasVehicleSurfingInfo);
+    if (bHasVehicleSurfingInfo) 
+    {
+        bsPlayerSync.Read(ofSync.wSurfInfo);
+        bsPlayerSync.Read(ofSync.vecSurfOffsets.x);
+        bsPlayerSync.Read(ofSync.vecSurfOffsets.y);
+        bsPlayerSync.Read(ofSync.vecSurfOffsets.z);
+    } 
+    else
+        ofSync.wSurfInfo = INVALID_VEHICLE_ID;
+}
 
 void SAMPNet::Connect(const char* ip, unsigned short port, const char* password)
 {
@@ -228,6 +312,7 @@ void SAMPNet::ProcessPackets()
             PROCPAK(ConnectionLost);
             PROCPAK(ConnectionAccepted);
             PROCPAK(FailedToAuth);
+            PROCPAK(PlayerSync);
 
             default: break;
         }

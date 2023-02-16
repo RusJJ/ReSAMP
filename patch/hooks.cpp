@@ -22,6 +22,11 @@ int* texStorageVar1;
 char** texStorageVar2;
 int* texStorageVar3;
 
+int Stub_Ret0(int arg, ...)
+{
+    return 0;
+}
+
 DECL_HOOK(void*, OS_FileOpen, int dataArea, void** data, const char *path, int accessType)
 {
     const char* newPath = path;
@@ -119,8 +124,15 @@ DECL_HOOKv(DrawAllWidgets, bool a1)
 }
 DECL_HOOKv(PlayerInfoProcess, CPlayerInfo* self, int pedId)
 {
+    int playerId = pedId;
+    if(playerId == 0) playerId = CLocalPlayer::GetID();
+    else if(playerId == CLocalPlayer::GetID()) playerId = 0;
+    
     Game::m_nProcessedInPlayerInfo = pedId;
     PlayerInfoProcess(self, pedId);
+    
+    
+    
     Game::m_nProcessedInPlayerInfo = -1;
 }
 DECL_HOOK(void*, Task_LeaveCar, void* self, CVehicle* pVehicle, int a1, int a2, bool a3, bool a4)
@@ -216,6 +228,12 @@ void HookFunctions()
     // no peds
     aml->PlaceRET(aml->GetSym(hGTASA, "_ZN11CPopulation25GeneratePedsAtStartOfGameEv"));
     aml->PlaceRET(aml->GetSym(hGTASA, "_ZN15InteriorGroup_c13SetupShopPedsEv"));
+    
+    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN10CGameLogic10UpdateSkipEv"));
+    
+    aml->Redirect(pGTASA + 0x307FF8 + 0x1, pGTASA + 0x3080FA + 0x1 ); // damn that 2player logic // nothing
+    
+    aml->Redirect(aml->GetSym(hGTASA, "_ZN10CGameLogic17IsCoopGameGoingOnEv"), (uintptr_t)Stub_Ret0);
 }
 
 void HookFunctionsLate()

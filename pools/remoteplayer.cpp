@@ -19,9 +19,18 @@ CRemotePlayer::CRemotePlayer()
 
 void CRemotePlayer::Update()
 {
+    if(!m_pEntity || m_bIsLocal) return;
+    
     if(m_nMarkerID >= 0)
     {
         
+    }
+    
+    m_pEntity->m_fHealth = (float)m_ofSync.byteHealth;
+    if(m_byteState == PLAYER_STATE_ONFOOT)
+    {
+        SetKeys(m_ofSync.wKeys, m_ofSync.lrAnalog, m_ofSync.udAnalog);
+        m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
     }
 }
 

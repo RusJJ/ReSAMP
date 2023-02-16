@@ -1,4 +1,5 @@
 #include <mod/amlmod.h>
+#include <mod/logger.h>
 #include <samp.h>
 #include <gtasa.h>
 #include <unistd.h>
@@ -118,15 +119,15 @@ void Game::ShowWidgets(bool enabled)
 
 CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, float rot, bool createMarker)
 {
+    CRemotePlayer* player = m_pPlayerPool->AllocAt(id, true);
     if(id == 0) // Create local player???
     {
         // This may happen if we loaded in a non-empty server
         // So there's player with id 0
         id = CLocalPlayer::GetID();
     }
-    CRemotePlayer* player = m_pPlayerPool->AllocAt(id, true);
     player->m_nID = id;
-    CALLSCM(CREATE_PLAYER, &player->m_nID, x, y, z, &player->m_nGtaID);
+    CALLSCM(CREATE_PLAYER, id, x, y, z, &player->m_nGtaID);
     CALLSCM(GET_PLAYER_CHAR, id, &player->m_nGtaID);
 
     CALLSCM(SET_CHAR_DROPS_WEAPONS_WHEN_DEAD, player->m_nGtaID, true);
@@ -135,6 +136,7 @@ CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, f
     CALLSCM(SET_CHAR_MONEY, player->m_nGtaID, samp->GetServerVars().m_iDeathDropMoney);
 
     player->m_pEntity = GetPlayerByGtaID(player->m_nGtaID);
+    Game::RequestModelNow(skin);
     player->m_pEntity->SetModelIndex(skin);
     //player->m_pEntity->GetEntityFlags() &= 0x1;
 

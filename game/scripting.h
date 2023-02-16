@@ -39,7 +39,7 @@ extern        GAME_SCRIPT_THREAD* gst;
 
 // https://library.sannybuilder.com/#/sa_mobile
 DEFVAR(0003, SHAKE_CAM, i);
-DEFVAR(0053, CREATE_PLAYER, vfffv);
+DEFVAR(0053, CREATE_PLAYER, ifffv);
 DEFVAR(009A, CREATE_CHAR, iifffv);
 DEFVAR(009B, DELETE_CHAR, i);
 DEFVAR(00A0, GET_CHAR_COORDINATES, ivvv);
