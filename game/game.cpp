@@ -417,12 +417,22 @@ bool Game::IsBuildingRemoved(int modelId, float x, float y, float z)
     return false;
 }
 
-uint16_t Game::GetSAMPVehID(CVehicle* v)
+uint16_t Game::GetSAMPVehID(CEntity* v)
 {
     int maxvehicles = Game::m_pVehiclePool->GetHighestSlotUsedEver();
     for(uint16_t i = 0; i < maxvehicles; ++i)
     {
-        if(Game::m_pVehiclePool->IsSlotOccupied(i) && Game::m_pVehiclePool->GetAt(i)->m_pEntity == v) return i;
+        if(Game::m_pVehiclePool->IsSlotOccupied(i) && Game::m_pVehiclePool->GetAt(i)->m_pEntity == (CVehicle*)v) return i;
+    }
+    return 0xFFFF;
+}
+
+uint16_t Game::GetSAMPPlayerID(CEntity* p)
+{
+    int maxplayers = Game::m_pPlayerPool->GetHighestSlotUsedEver();
+    for(uint16_t i = 0; i < maxplayers; ++i)
+    {
+        if(Game::m_pPlayerPool->IsSlotOccupied(i) && Game::m_pPlayerPool->GetAt(i)->m_pEntity == p) return i;
     }
     return 0xFFFF;
 }

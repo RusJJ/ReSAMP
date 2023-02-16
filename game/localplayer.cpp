@@ -69,8 +69,12 @@ void CLocalPlayer::Update()
         {
             m_bWasted = true;
             
+            uint8_t byteWeaponKilled = m_pEntity->m_nLastWeaponDamage;
+            uint16_t killerId = GetMyKillerID();
+            
             RakNet::BitStream bsSend;
-            bsSend.Write(m_byteLastInteriorId);
+            bsSend.Write(byteWeaponKilled);
+            bsSend.Write(killerId);
             samp->GetRakClient()->RPC((int*)&RPC_Death, &bsSend, HIGH_PRIORITY, RELIABLE_SEQUENCED, 0,false, UNASSIGNED_NETWORK_ID, nullptr);
         }
     }
@@ -80,7 +84,8 @@ void CLocalPlayer::Update()
         {
             if(m_bClassChangeRequested)
             {
-                
+                m_bClassChangeRequested = false;
+                RequestClass();
             }
             else
             {
@@ -212,6 +217,26 @@ void CLocalPlayer::SetInterior(uint8_t id)
     m_pEntity->m_nInterior = id;
     CALLSCM(SET_AREA_VISIBLE, id);
     Game::RefreshStreamingAt(CLocalPlayer::GetEntity()->GetPosition().m_vec2D);
+}
+
+uint16_t CLocalPlayer::GetMyKillerID()
+{
+    if(!m_pEntity->m_pDamageEntity) return 0xFFFF;
+    
+    if(m_pEntity->m_nLastWeaponDamage == WEAPON_DROWNING) return WEAPON_DROWNING;
+    
+    if(m_pEntity->m_pDamageEntity->m_nType == ENTITY_TYPE_PED)
+    {
+        uint16_t pid = Game::GetSAMPPlayerID(m_pEntity->m_pDamageEntity);
+    }
+    else if(m_pEntity->m_pDamageEntity->m_nType == ENTITY_TYPE_VEHICLE)
+    {
+        uint16_t vid = Game::GetSAMPVehID(m_pEntity->m_pDamageEntity);
+    }
+    
+    
+    
+    return 0xFFFF;
 }
 
 void CLocalPlayer::SendSyncData_OnFoot()

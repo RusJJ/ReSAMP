@@ -207,12 +207,15 @@ void HookFunctions()
 
     // Other things
     HOOKPLT(LoadObjectInstance, pGTASA + 0x675E6C);
-    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN11CPopulation25GeneratePedsAtStartOfGameEv"));
     HOOK(GetRadarTraceColour, aml->GetSym(hGTASA, "_ZN6CRadar19GetRadarTraceColourEjhh"));
     
     // resp?
     aml->Redirect(pGTASA + 0x3082EA + 0x1, pGTASA + 0x308316 + 0x1 ); // no fade cam
-    //aml->Redirect(pGTASA + 0x308316 + 0x1, pGTASA + 0x308B94 + 0x1 );
+    //aml->Redirect(pGTASA + 0x308316 + 0x1, pGTASA + 0x308B94 + 0x1 ); // no respawn at all
+    
+    // no peds
+    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN11CPopulation25GeneratePedsAtStartOfGameEv"));
+    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN15InteriorGroup_c13SetupShopPedsEv"));
 }
 
 void HookFunctionsLate()

@@ -21,6 +21,7 @@ public:
     static void                 RequestClass(short num = -1, bool overwrite = false);
     static void                 RequestSpawn();
     static void                 SetInterior(uint8_t id);
+    static uint16_t             GetMyKillerID();
 
     static void                 SendSyncData_OnFoot();
     static void                 SendSyncData_InCar();

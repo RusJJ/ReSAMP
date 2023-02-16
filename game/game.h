@@ -95,7 +95,8 @@ public:
     static bool IsBuildingRemoved(uintptr_t buildingEntity);
     static bool IsBuildingRemoved(int modelId, CVector pos);
     static bool IsBuildingRemoved(int modelId, float x, float y, float z);
-    static uint16_t GetSAMPVehID(CVehicle* v);
+    static uint16_t GetSAMPVehID(CEntity* v);
+    static uint16_t GetSAMPPlayerID(CEntity* p);
     static void ToggleCJWalk(bool enable);
     static uint32_t CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle);
 

@@ -231,8 +231,7 @@ ONRPC(SetMapIcon)
 {
     RAKDATA(params);
     
-    uint8_t byteIndex;
-    uint8_t byteIcon;
+    uint8_t byteIndex, byteIcon, byteStyle;
     uint32_t iColor;
     CVector pos;
 
@@ -242,10 +241,16 @@ ONRPC(SetMapIcon)
     bsData.Read(pos.z);
     bsData.Read(byteIcon);
 	bsData.Read(iColor);
+    bsData.Read(byteStyle);
     
+    if(Game::m_pMapIconPool->IsSlotOccupied(byteIndex))
+    {
+        CALLSCM(REMOVE_BLIP, Game::m_pMapIconPool->GetAt(byteIndex)->m_nGtaID);
+        Game::m_pMapIconPool->RemoveAt(byteIndex);
+    }
     CRemoteMapIcon* m = Game::m_pMapIconPool->AllocAt(byteIndex);
     m->m_nID = byteIndex;
-    m->m_nGtaID = Game::CreateRadarMarkerIcon(0, pos.x, pos.y, pos.z, iColor, byteIcon);
+    m->m_nGtaID = Game::CreateRadarMarkerIcon(byteIcon, pos.x, pos.y, pos.z, iColor, byteStyle);
 }
 ONRPC(SetPlayerArmour)
 {
@@ -294,6 +299,10 @@ ONRPC(RequestClass)
     {
         CLocalPlayer::SetModelIndex(CLocalPlayer::m_SpawnInfo.iSkin);
         spawnui->SetDrawable(true);
+        
+        CLocalPlayer::GetEntity()->m_fHealth = 100;
+        CLocalPlayer::GetEntity()->m_fArmour = 0;
+        CLocalPlayer::m_bDisableControls = true;
     }
 }
 ONRPC(RequestSpawn)
@@ -368,7 +377,11 @@ ONRPC(DisableMapIcon)
     uint8_t byteIndex;
     bsData.Read(byteIndex);
     
-    CALLSCM(REMOVE_BLIP, Game::m_pMapIconPool->GetAt(byteIndex)->m_nGtaID);
+    if(Game::m_pMapIconPool->IsSlotOccupied(byteIndex))
+    {
+        CALLSCM(REMOVE_BLIP, Game::m_pMapIconPool->GetAt(byteIndex)->m_nGtaID);
+        Game::m_pMapIconPool->RemoveAt(byteIndex);
+    }
 }
 ONRPC(Weather)
 {
