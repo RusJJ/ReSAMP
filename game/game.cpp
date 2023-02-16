@@ -120,13 +120,13 @@ void Game::ShowWidgets(bool enabled)
 CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, float rot, bool createMarker)
 {
     CRemotePlayer* player = m_pPlayerPool->AllocAt(id, true);
+    player->m_nID = id; // This one gives us a player id (but we can use our pool anyway)
     if(id == 0) // Create local player???
     {
         // This may happen if we loaded in a non-empty server
         // So there's player with id 0
         id = CLocalPlayer::GetID();
     }
-    player->m_nID = id;
     CALLSCM(CREATE_PLAYER, id, x, y, z, &player->m_nGtaID);
     CALLSCM(GET_PLAYER_CHAR, id, &player->m_nGtaID);
 
