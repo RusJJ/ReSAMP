@@ -1,6 +1,7 @@
 #ifndef __REMOTEPLAYER_H
 #define __REMOTEPLAYER_H
 
+#include <samp.h>
 #include <sampnet/samp_syncdata.h>
 
 #define PLAYER_STATE_NONE						0
@@ -26,15 +27,19 @@ public:
     void Update();
     bool IsActive();
     void SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog);
+    inline void SetName(const char* newname) { snprintf(m_szName, sizeof(m_szName), "%s", newname); }
 
 public:
     bool m_bIsLocal;
     unsigned char m_byteState;
+    char m_szName[MAX_PLAYER_NAME+1];
 
     int m_nID;
     int m_nGtaID;
     uint32_t m_nMarkerID;
+    CVector m_vecMarkerPos;
     CPlayerPed* m_pEntity;
+    bool m_bOnfootDataChanged;
 
     ONFOOT_SYNC_DATA    m_ofSync;
     INCAR_SYNC_DATA     m_icSync;

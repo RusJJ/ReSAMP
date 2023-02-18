@@ -99,6 +99,7 @@ public:
     static uint16_t GetSAMPPlayerID(CEntity* p);
     static void ToggleCJWalk(bool enable);
     static uint32_t CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle);
+    static void AddEntityToWorld(CEntity* ent, bool remove);
 
     static inline uint32_t GetTick()
     {

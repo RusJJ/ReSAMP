@@ -53,7 +53,7 @@ void* InitMatrixArray()
 void PatchTheGame()
 {
     // CWorld::Players
-    g_pPlayersContainer = new CPlayerInfo[MAX_PLAYERS] {0};
+    g_pPlayersContainer = new CPlayerInfo[MAX_PLAYERS+1] {0};
     aml->Write(pGTASA + 0x6783C8, (uintptr_t)&g_pPlayersContainer, sizeof(void*));
 
     // CWorld::PlayerInFocus (by default this variable is in range of [-128; 127])
@@ -160,7 +160,7 @@ __attribute__((optnone)) __attribute__((naked)) void VehiclePool_Reconstruct_stu
 void DoPoolsPatches()
 {
     aml->Redirect(pGTASA + 0x468B76 + 0x1, (uintptr_t)VehiclePool_Reconstruct_stub);
-    // TXDs
+    // TXDs (not working?)
     aml->Write(pGTASA + 0x5D3A68, (uintptr_t)"\x42\xF2\x10\x70", 4);
     aml->Write(pGTASA + 0x5D3A6C, (uintptr_t)"\x42\xF2\x10\x75", 4);
     aml->Write(pGTASA + 0x5D3A5A, (uintptr_t)"\x48\xF6\c80\x30\xC0\xF2\x08\x00", 8);

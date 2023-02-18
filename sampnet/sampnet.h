@@ -85,6 +85,7 @@ public:
                                     CLSPAK(ConnectionAccepted);
                                     CLSPAK(FailedToAuth);
                                     CLSPAK(PlayerSync);
+                                    CLSPAK(MarkerSync);
 
     inline void                     SetHostname(const char* name) { snprintf(m_szHostName, sizeof(m_szHostName), "%s", name); };
     inline RakClientInterface*      GetRakClient() { return m_pRakClient; };

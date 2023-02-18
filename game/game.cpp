@@ -39,6 +39,8 @@ void (*ClearPedWeapons)(CPed*);
 int (*GivePedWeapon)(CPed*, eWeaponType, uint32_t, bool);
 void (*AddBigMessage)(uint16_t*, uint32_t, uint16_t);
 void (*AsciiToGxt)(const char*, uint16_t*);
+void (*WorldAdd)(CEntity*);
+void (*WorldRemove)(CEntity*);
 
 // STATIC INITIALIZATION
 uint16_t* Game::m_pLatestBigMessage = new uint16_t[0xFF] {0};
@@ -94,6 +96,8 @@ void Game::InitializeGameClass()
     SET_TO(GivePedWeapon,              aml->GetSym(hGTASA, "_ZN4CPed10GiveWeaponE11eWeaponTypejb"));
     SET_TO(AddBigMessage,              aml->GetSym(hGTASA, "_ZN9CMessages13AddBigMessageEPtjt"));
     SET_TO(AsciiToGxt,                 aml->GetSym(hGTASA, "_Z14AsciiToGxtCharPKcPt"));
+    SET_TO(WorldAdd,                   aml->GetSym(hGTASA, "_ZN6CWorld3AddEP7CEntity"));
+    SET_TO(WorldRemove,                aml->GetSym(hGTASA, "_ZN6CWorld6RemoveEP7CEntity"));
 }
 
 void Game::ShowBigMsg(const char* msg, int time, int type)
@@ -119,7 +123,7 @@ void Game::ShowWidgets(bool enabled)
 
 CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, float rot, bool createMarker)
 {
-    CRemotePlayer* player = m_pPlayerPool->AllocAt(id, true);
+    CRemotePlayer* player = m_pPlayerPool->GetAt(id);
     player->m_nID = id; // This one gives us a player id (but we can use our pool anyway)
     if(id == 0) // Create local player???
     {
@@ -127,8 +131,8 @@ CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, f
         // So there's player with id 0
         id = CLocalPlayer::GetID();
     }
-    CALLSCM(CREATE_PLAYER, id, x, y, z, &player->m_nGtaID);
-    CALLSCM(GET_PLAYER_CHAR, id, &player->m_nGtaID);
+    CALLSCM(CREATE_PLAYER, id+1, x, y, z, &player->m_nGtaID);
+    CALLSCM(GET_PLAYER_CHAR, id+1, &player->m_nGtaID);
 
     CALLSCM(SET_CHAR_DROPS_WEAPONS_WHEN_DEAD, player->m_nGtaID, true);
     CALLSCM(SET_CHAR_PROOFS, player->m_nGtaID, false, false, true, false, false);
@@ -138,6 +142,7 @@ CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, f
     player->m_pEntity = GetPlayerByGtaID(player->m_nGtaID);
     Game::RequestModelNow(skin);
     player->m_pEntity->SetModelIndex(skin);
+    //player->m_pEntity->m_fHealth = 100;
     //player->m_pEntity->GetEntityFlags() &= 0x1;
 
     return player;
@@ -183,7 +188,7 @@ CRemoteVehicle* Game::CreateVehicle(VehicleData& data)
     }
     
     CALLSCM(ADD_BLIP_FOR_CAR_OLD, vehicle->m_nGtaID, 1, 2, &vehicle->m_nMarkerID);
-    CALLSCM(CHANGE_BLIP_COLOUR, vehicle->m_nMarkerID, 200);
+    CALLSCM(CHANGE_BLIP_COLOUR, vehicle->m_nMarkerID, 0xFFFFFFAA); // 200
     
     return vehicle;
 }
@@ -202,7 +207,7 @@ void Game::RequestModelNow(int modelId)
 {
     CALLSCM(REQUEST_MODEL, modelId);
     CALLSCM(LOAD_ALL_MODELS_NOW);
-    while(CALLSCM(HAS_MODEL_LOADED, modelId) == 0) usleep(10);
+    while(CALLSCM(HAS_MODEL_LOADED, modelId) == 0) usleep(10000);
 }
 
 void Game::LoadRequestedModels()
@@ -421,18 +426,20 @@ bool Game::IsBuildingRemoved(int modelId, float x, float y, float z)
 
 uint16_t Game::GetSAMPVehID(CEntity* v)
 {
+    if(v->m_nType != ENTITY_TYPE_VEHICLE) return 0xFFFF;
     int maxvehicles = Game::m_pVehiclePool->GetHighestSlotUsedEver();
-    for(uint16_t i = 0; i < maxvehicles; ++i)
+    for(uint16_t i = 0; i <= maxvehicles; ++i)
     {
-        if(Game::m_pVehiclePool->IsSlotOccupied(i) && Game::m_pVehiclePool->GetAt(i)->m_pEntity == (CVehicle*)v) return i;
+        if(Game::m_pVehiclePool->IsSlotOccupied(i) && Game::m_pVehiclePool->GetAt(i)->m_pEntity == v) return i;
     }
     return 0xFFFF;
 }
 
 uint16_t Game::GetSAMPPlayerID(CEntity* p)
 {
+    if(p->m_nType != ENTITY_TYPE_PED) return 0xFFFF;
     int maxplayers = Game::m_pPlayerPool->GetHighestSlotUsedEver();
-    for(uint16_t i = 0; i < maxplayers; ++i)
+    for(uint16_t i = 0; i <= maxplayers; ++i)
     {
         if(Game::m_pPlayerPool->IsSlotOccupied(i) && Game::m_pPlayerPool->GetAt(i)->m_pEntity == p) return i;
     }
@@ -478,4 +485,16 @@ uint32_t Game::CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float 
         }
     }
     return dwMarkerID;
+}
+
+void Game::AddEntityToWorld(CEntity* ent, bool remove)
+{
+    if(remove)
+    {
+        WorldRemove(ent);
+    }
+    else
+    {
+        WorldAdd(ent);
+    }
 }

@@ -10,7 +10,8 @@
 #include <ui/spawnscreen.h>
 #include <pools/remoteplayer.h>
 
-#define RAKDATA(_PARAMS) RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1, false)
+#define RAKDATA(_PARAMS) int dataLen = ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1; RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), dataLen, false)
+#define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]);
 
 
 ONRPC(SetPlayerPos)
@@ -160,7 +161,10 @@ ONRPC(SetPlayerDrunkLevel)
 {
     RAKDATA(params);
     
-    
+    // TODO:
+    // 50000+ lvl?
+    // Obviously there's some other logic, 
+    // than just set player drunkess
 }
 ONRPC(RemovePlayerBuilding)
 {
@@ -314,6 +318,37 @@ ONRPC(RequestSpawn)
     
     CLocalPlayer::Spawn();
     spawnui->SetDrawable(false);
+}
+ONRPC(ServerJoin)
+{
+    RAKDATA(params);
+    
+    char szPlayerName[MAX_PLAYER_NAME+1];
+    uint16_t playerId;
+    uint8_t byteNameLen;
+    uint8_t bIsNPC;
+    int32_t arg1;
+    
+    /*char* out = new char[dataLen+1] {0};
+    bsData.Read(out, dataLen);
+    for(int i = 0; i < dataLen; ++i)
+    {
+        logger->Info("ServerJoin[%d]=0x%02X", i, out[i]);
+    }*/
+    
+    bsData.Read(playerId);
+    bsData.Read(arg1);
+    bsData.Read(bIsNPC);
+    bsData.Read(byteNameLen);
+    bsData.Read(szPlayerName, (int)byteNameLen);
+    szPlayerName[byteNameLen] = '\0';
+    
+    logger->Info("serverjoin pre, data len %d", dataLen);
+    logger->Info("serverjoin %d %d %s", (int)playerId, (int)byteNameLen, szPlayerName);
+    CRemotePlayer* p = Game::m_pPlayerPool->AllocAt(playerId, true);
+    
+    p->SetName(szPlayerName);
+    p->m_nID = playerId;
 }
 ONRPC(InitGame)
 {
@@ -500,6 +535,7 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(DisplayGameText); // 73
     BINDRPC(RequestClass); // 128
     BINDRPC(RequestSpawn); // 129
+    BINDRPC(ServerJoin); // 137
     BINDRPC(InitGame); // 139
     BINDRPC(DisableMapIcon); // 144
     BINDRPC(Weather); // 152

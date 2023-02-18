@@ -5,7 +5,9 @@
 
 #include "patch/pad.h"
 #include "remoteplayer.h"
+#include <game/game.h>
 #include <game/localplayer.h>
+#include <game/scripting.h>
 
 CRemotePlayer::CRemotePlayer()
 {
@@ -15,28 +17,49 @@ CRemotePlayer::CRemotePlayer()
     m_nGtaID = -1;
     m_nMarkerID = -1;
     m_pEntity = NULL;
+    m_bOnfootDataChanged = false;
+    memset(m_szName, sizeof(m_szName), 0);
 }
 
 void CRemotePlayer::Update()
 {
-    if(!m_pEntity || m_bIsLocal) return;
+    if(m_bIsLocal)
+    {
+        CLocalPlayer::Update();
+        return;
+    }
     
     if(m_nMarkerID >= 0)
     {
-        
+        CALLSCM(REMOVE_BLIP, m_nMarkerID);
     }
+
+    m_nMarkerID = Game::CreateRadarMarkerIcon(0, m_vecMarkerPos.x, m_vecMarkerPos.y, m_vecMarkerPos.z, m_nID, 0);
     
-    m_pEntity->m_fHealth = (float)m_ofSync.byteHealth;
+    if(!m_pEntity) return;
+    
+    //m_pEntity->m_fHealth = (float)m_ofSync.byteHealth;
     if(m_byteState == PLAYER_STATE_ONFOOT)
     {
         SetKeys(m_ofSync.wKeys, m_ofSync.lrAnalog, m_ofSync.udAnalog);
-        m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
+        m_pEntity->m_vecMoveSpeed = CVector(0);
+        
+        if(m_bOnfootDataChanged)
+        {
+            Game::AddEntityToWorld(m_pEntity, true); // Start changes
+            m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
+            m_pEntity->GetPosition() = m_ofSync.vecPos;
+            m_pEntity->m_vecMoveSpeed = m_ofSync.vecMoveSpeed;
+            Game::AddEntityToWorld(m_pEntity, false); // End changes!
+            
+            m_bOnfootDataChanged = false;
+        }
     }
 }
 
-bool CRemotePlayer::IsActive()
+bool CRemotePlayer::IsActive() // TODO: Check thiz
 {
-    return (!m_bIsLocal && m_pEntity != NULL && m_byteState != PLAYER_STATE_NONE);
+    return (!m_bIsLocal && m_byteState != PLAYER_STATE_NONE);
 }
 
 void CRemotePlayer::SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog)

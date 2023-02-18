@@ -146,7 +146,6 @@ DEFPAK(207, PlayerSync)
     bsPlayerSync.Read(bytePacketID);
     bsPlayerSync.Read(playerId);
     
-    logger->Info("PlayerSync %d", (int)playerId);
     CRemotePlayer* p = Game::m_pPlayerPool->GetAt(playerId);
     if(!p || p->m_bIsLocal) return; // bruh
     
@@ -181,16 +180,19 @@ DEFPAK(207, PlayerSync)
     uint8_t byteArmTemp=0,byteHlTemp=0;
 
     bsPlayerSync.Read(byteHealthArmour);
+    
+    logger->Info("PlayerSync %d %d", (int)playerId, (int)byteHealthArmour);
+    
     byteArmTemp = (byteHealthArmour & 0x0F);
     byteHlTemp = (byteHealthArmour >> 4);
 
-    if(byteArmTemp == 0xF) ofSync.byteArmour = 100;
+    /*if(byteArmTemp == 0xF) ofSync.byteArmour = 100;
     else if(byteArmTemp == 0) ofSync.byteArmour = 0;
-    else ofSync.byteArmour = byteArmTemp * 7;
+    else*/ ofSync.byteArmour = byteArmTemp * 7;
 
-    if(byteHlTemp == 0xF) ofSync.byteHealth = 100;
+    /*if(byteHlTemp == 0xF) ofSync.byteHealth = 100;
     else if(byteHlTemp == 0) ofSync.byteHealth = 0;
-    else ofSync.byteHealth = byteHlTemp * 7;
+    else*/ ofSync.byteHealth = byteHlTemp * 7;
 
     // CURRENT WEAPON
     bsPlayerSync.Read(ofSync.byteCurrentKeyAndWeapon);
@@ -213,6 +215,48 @@ DEFPAK(207, PlayerSync)
     } 
     else
         ofSync.wSurfInfo = INVALID_VEHICLE_ID;
+        
+    p->m_bOnfootDataChanged = true;
+}
+
+
+DEFPAK(208, MarkerSync)
+{
+    if(GetGameState() != GAMESTATE_CONNECTED) return;
+
+    uint8_t bytePacketID;
+    uint32_t nPlayers;
+    
+    RakNet::BitStream bsMarkerSync((unsigned char *)pak->data, pak->length, false);
+    bsMarkerSync.Read(bytePacketID);
+	bsMarkerSync.Read(nPlayers);
+    
+    if(nPlayers)
+    {
+        uint16_t pid;
+        bool bStreamMarker;
+        
+        int16_t shortTemp;
+        CVector vecTemp;
+        
+        for(uint32_t i = 0; i < nPlayers; ++i)
+        {
+            bsMarkerSync.Read(pid);
+            bsMarkerSync.Read(bStreamMarker);
+            if(bStreamMarker)
+            {
+                bsMarkerSync.Read(shortTemp); vecTemp.x = (float)shortTemp;
+                bsMarkerSync.Read(shortTemp); vecTemp.y = (float)shortTemp;
+                bsMarkerSync.Read(shortTemp); vecTemp.z = (float)shortTemp;
+                
+                CRemotePlayer* p = Game::m_pPlayerPool->GetAt(pid);
+                if(p)
+                {
+                    p->m_vecMarkerPos = vecTemp;
+                }
+            }
+        }
+    }
 }
 
 void SAMPNet::Connect(const char* ip, unsigned short port, const char* password)
@@ -284,16 +328,13 @@ void SAMPNet::Update()
 
 void SAMPNet::ProcessPools()
 {
-    // Our controllable puppet
-    CLocalPlayer::Update();
-
     // Players pool
     CRemotePlayer* player;
-    unsigned short maxplayers = Game::m_pPlayerPool->GetHighestSlotUsedEver() + 1;
-    for(int i = 0; i < maxplayers; ++i)
+    unsigned short maxplayers = Game::m_pPlayerPool->GetHighestSlotUsedEver();
+    for(int i = 0; i <= maxplayers; ++i)
     {
         player = Game::m_pPlayerPool->GetAt(i);
-        if(player && player->IsActive()) player->Update();
+        if(player) player->Update();
     }
 }
 
@@ -313,6 +354,7 @@ void SAMPNet::ProcessPackets()
             PROCPAK(ConnectionAccepted);
             PROCPAK(FailedToAuth);
             PROCPAK(PlayerSync);
+            PROCPAK(MarkerSync);
 
             default: break;
         }

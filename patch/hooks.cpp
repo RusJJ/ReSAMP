@@ -190,6 +190,27 @@ __attribute__((optnone)) __attribute__((naked)) void EnterCarAsDriver_inject()
 }
 
 uint32_t TranslateColorCodeToRGBA(uint32_t);
+uintptr_t DrawCoordBlip_BackTo;
+extern "C" int DrawCoordBlip_patch(uint32_t clrIdx)
+{
+    //logger->Info("DrawCoordBlip Patched for clr idx %d", clrIdx);
+    return TranslateColorCodeToRGBA(clrIdx);
+}
+__attribute__((optnone)) __attribute__((naked)) void DrawCoordBlip_inject()
+{
+    asm volatile(
+        "MOV R0, R9\n"
+        "PUSH {R1-R8}\n"
+        "BL DrawCoordBlip_patch\n"
+        "POP {R1-R8}\n"
+        "PUSH {R0}\n");
+    asm volatile(
+        "MOV R12, %0\n"
+        "POP {R0}\n"
+        "BX R12\n"
+    :: "r" (DrawCoordBlip_BackTo));
+}
+
 DECL_HOOK(uint32_t, GetRadarTraceColour, uint32_t code, uint8_t, uint8_t)
 {
     logger->Info("colaar");
@@ -220,6 +241,12 @@ void HookFunctions()
     // Other things
     HOOKPLT(LoadObjectInstance, pGTASA + 0x675E6C);
     HOOK(GetRadarTraceColour, aml->GetSym(hGTASA, "_ZN6CRadar19GetRadarTraceColourEjhh"));
+    aml->Redirect(pGTASA + 0x43FB1A + 0x1, (uintptr_t)DrawCoordBlip_inject); // Player radar icon colors
+    DrawCoordBlip_BackTo = pGTASA + 0x43FB3C + 0x1;
+    aml->PlaceNOP(pGTASA + 0x43FE0A + 0x1, 2); // No "Target" circle
+    aml->PlaceNOP(pGTASA + 0x44095E + 0x1, 2); // No "Target" circle
+    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN6CRadar10DrawLegendEiii")); // Disable map legend
+    aml->PlaceNOP(pGTASA + 0x2AB998 + 0x1, 2); // No "Target" circle
     
     // resp?
     aml->Redirect(pGTASA + 0x3082EA + 0x1, pGTASA + 0x308316 + 0x1 ); // no fade cam
@@ -229,11 +256,25 @@ void HookFunctions()
     aml->PlaceRET(aml->GetSym(hGTASA, "_ZN11CPopulation25GeneratePedsAtStartOfGameEv"));
     aml->PlaceRET(aml->GetSym(hGTASA, "_ZN15InteriorGroup_c13SetupShopPedsEv"));
     
-    aml->PlaceRET(aml->GetSym(hGTASA, "_ZN10CGameLogic10UpdateSkipEv"));
+    //aml->PlaceRET(aml->GetSym(hGTASA, "_ZN10CGameLogic10UpdateSkipEv"));
+    //aml->PlaceRET(aml->GetSym(hGTASA, "_ZN10CGameLogic36RestorePlayerStuffDuringResurrectionEP10CPlayerPed7CVectorf"));
+    //aml->Redirect(pGTASA + 0x308106 + 0x1, pGTASA + 0x2BD38C + 0x1);
+    aml->PlaceNOP(pGTASA + 0x308106 + 0x1, 3);
     
     aml->Redirect(pGTASA + 0x307FF8 + 0x1, pGTASA + 0x3080FA + 0x1 ); // damn that 2player logic // nothing
+    aml->Redirect(pGTASA + 0x30818E + 0x1, pGTASA + 0x308B94 + 0x1 ); // damn that 2player logic // nothing
     
     aml->Redirect(aml->GetSym(hGTASA, "_ZN10CGameLogic17IsCoopGameGoingOnEv"), (uintptr_t)Stub_Ret0);
+    aml->Redirect(aml->GetSym(hGTASA, "_ZN11CTheScripts18IsPlayerOnAMissionEv"), (uintptr_t)Stub_Ret0);
+    
+    // Always show blips
+    aml->Redirect(pGTASA + 0x43FD0A + 0x1, pGTASA + 0x43FD30 + 0x1);
+    aml->Redirect(pGTASA + 0x440710 + 0x1, pGTASA + 0x440734 + 0x1);
+    
+    // Bars for 2nd player
+    aml->Redirect(pGTASA + 0x2BD33A + 0x1, pGTASA + 0x2BD38C + 0x1);
+    aml->Redirect(pGTASA + 0x2BD404 + 0x1, pGTASA + 0x2BD44C + 0x1);
+    aml->Redirect(pGTASA + 0x2BD48A + 0x1, pGTASA + 0x2BD4D4 + 0x1);
 }
 
 void HookFunctionsLate()
