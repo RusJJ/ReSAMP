@@ -51,6 +51,13 @@ void CLocalPlayer::PutMeInPool(int id)
     m_pRemote->m_bIsLocal = true; // Did i just really forgot that?
 }
 
+void CLocalPlayer::ForceSpawnSelection()
+{
+    
+    
+    RequestClass();
+}
+
 void CLocalPlayer::Update()
 {
     m_nTick = Game::GetTick();
@@ -70,7 +77,7 @@ void CLocalPlayer::Update()
         {
             m_bWasted = true;
             
-            uint8_t byteWeaponKilled = m_pEntity->m_nLastWeaponDamage;
+            uint8_t byteWeaponKilled = m_pEntity->LastDamagedWeaponType;
             uint16_t killerId = GetMyKillerID();
             
             RakNet::BitStream bsSend;
@@ -167,7 +174,7 @@ void CLocalPlayer::OnConnected()
 {
     logger->Info("Connect");
     
-    CLocalPlayer::RequestClass(0, true);
+    CLocalPlayer::RequestClass();
 }
 
 void CLocalPlayer::ChangeClass(bool next)
@@ -224,7 +231,7 @@ uint16_t CLocalPlayer::GetMyKillerID()
 {
     if(!m_pEntity->m_pDamageEntity) return 0xFFFF;
     
-    if(m_pEntity->m_nLastWeaponDamage == WEAPON_DROWNING) return WEAPON_DROWNING;
+    if(m_pEntity->LastDamagedWeaponType == WEAPON_DROWNING) return WEAPON_DROWNING;
     
     if(m_pEntity->m_pDamageEntity->m_nType == ENTITY_TYPE_PED)
     {
@@ -261,7 +268,7 @@ void CLocalPlayer::SendSyncData_OnFoot()
 
         ofSync.byteHealth = (uint8_t)m_pEntity->m_fHealth;
         ofSync.byteArmour = (uint8_t)m_pEntity->m_fArmour;
-        ofSync.byteCurrentKeyAndWeapon = (m_pEntity->GetCurrentWeapon() | keys << 6);
+        ofSync.byteCurrentKeyAndWeapon = (m_pEntity->LastDamagedWeaponType | keys << 6);
         ofSync.byteSpecialAction = 0; // GetSpecialAction();
 
         ofSync.vecMoveSpeed.x = speed.x;

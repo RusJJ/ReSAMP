@@ -40,9 +40,9 @@ ONRPC(TogglePlayerControllable)
     RAKDATA(params);
     
     uint8_t byteControllable;
-	bsData.Read(byteControllable);
+    bsData.Read(byteControllable);
     
-    CLocalPlayer::m_bDisableControls = byteControllable;
+    CLocalPlayer::m_bDisableControls = !byteControllable;
 }
 ONRPC(PlayerPlaySound)
 {
@@ -80,7 +80,6 @@ ONRPC(SetPlayerFacingAngle)
     float fAngle;
     bsData.Read(fAngle);
     
-    //CLocalPlayer::GetEntity()->SetHeading(fAngle);
     CLocalPlayer::GetEntity()->m_fRotation1 = DegToRad(fAngle);
     CLocalPlayer::GetEntity()->m_fRotation2 = DegToRad(fAngle);
 }
@@ -154,8 +153,10 @@ ONRPC(WorldPlayerAdd)
     bsData.Read(bVisible);
 
     CRemotePlayer* pRemotePlayer = Game::CreatePlayer(playerId, iSkin, vecPos.x, vecPos.y, vecPos.z, fRotation, bVisible);
-    pRemotePlayer->GetEntity()->m_fHealth = 100.0f;
-    pRemotePlayer->GetEntity()->m_fArmour = 0.0f;
+    pRemotePlayer->m_pEntity->m_fHealth = 100.0f;
+    pRemotePlayer->m_pEntity->m_fArmour = 0.0f;
+    CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, pRemotePlayer->m_nGtaID, (int)byteFightingStyle, 6);
+    //pRemotePlayer->m_pEntity->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
 }
 ONRPC(SetPlayerDrunkLevel)
 {
@@ -291,6 +292,25 @@ ONRPC(DisplayGameText)
     CALLSCM(CLEAR_PRINTS);
     Game::ShowBigMsg(szMessage, iTime, iType);
 }
+ONRPC(ForceSpawnSelection)
+{
+    CLocalPlayer::ForceSpawnSelection();
+}
+ONRPC(SetFightingStyle)
+{
+    RAKDATA(params);
+    
+    uint8_t byteFightingStyle = 4;
+    bsData.Read(byteFightingStyle);
+    CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, CLocalPlayer::GetGtaID(), (int)byteFightingStyle, 6);
+    //CLocalPlayer::GetEntity()->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
+}
+ONRPC(NumberPlate)
+{
+    RAKDATA(params);
+    
+    // uint16_t vehid, uint8_t byteLen, char txt[byteLen]?
+}
 ONRPC(RequestClass)
 {
     RAKDATA(params);
@@ -327,28 +347,36 @@ ONRPC(ServerJoin)
     uint16_t playerId;
     uint8_t byteNameLen;
     uint8_t bIsNPC;
-    int32_t arg1;
-    
-    /*char* out = new char[dataLen+1] {0};
-    bsData.Read(out, dataLen);
-    for(int i = 0; i < dataLen; ++i)
-    {
-        logger->Info("ServerJoin[%d]=0x%02X", i, out[i]);
-    }*/
+    uint32_t color;
     
     bsData.Read(playerId);
-    bsData.Read(arg1);
+    bsData.Read(color);
     bsData.Read(bIsNPC);
     bsData.Read(byteNameLen);
     bsData.Read(szPlayerName, (int)byteNameLen);
     szPlayerName[byteNameLen] = '\0';
     
-    logger->Info("serverjoin pre, data len %d", dataLen);
-    logger->Info("serverjoin %d %d %s", (int)playerId, (int)byteNameLen, szPlayerName);
     CRemotePlayer* p = Game::m_pPlayerPool->AllocAt(playerId, true);
     
     p->SetName(szPlayerName);
     p->m_nID = playerId;
+}
+ONRPC(ServerQuit)
+{
+    RAKDATA(params);
+    
+    uint16_t pid;
+    uint8_t reason;
+    
+    bsData.Read(pid);
+    bsData.Read(reason);
+    
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(pid);
+    if(!p) return; // bruh
+    
+    p->KillBlip();
+    Game::RemovePlayerFromWorld(p);
+    Game::m_pPlayerPool->RemoveAt(pid);
 }
 ONRPC(InitGame)
 {
@@ -403,6 +431,7 @@ ONRPC(InitGame)
     samp->InitializeFromVars();
     
     Game::ToggleCJWalk(samp->GetServerVars().m_bUseCJWalk);
+    
     CLocalPlayer::OnConnected();
 }
 ONRPC(DisableMapIcon)
@@ -458,6 +487,21 @@ ONRPC(SetCameraLookAt)
     
     CALLSCM(POINT_CAMERA_AT_POINT, vecPos.x, vecPos.y, vecPos.z, 2);
 }
+ONRPC(WorldPlayerRemove)
+{
+    RAKDATA(params);
+    
+    uint16_t pid;
+    bsData.Read(pid);
+    
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(pid);
+    if(!p) return; // bruh
+    
+    Game::RemovePlayerFromWorld(p);
+    
+    p->m_pEntity = NULL;
+    p->m_nGtaID = -1;
+}
 ONRPC(WorldVehicleAdd)
 {
     RAKDATA(params);
@@ -499,13 +543,9 @@ ONRPC(WorldVehicleRemove)
 {
     RAKDATA(params);
     
-    unsigned short vehId;
+    uint16_t vehId;
     bsData.Read(vehId);
-    CRemoteVehicle* v = Game::m_pVehiclePool->GetAt(vehId);
-    
-    if(v->m_nMarkerID) CALLSCM(REMOVE_BLIP, v->m_nMarkerID);
-    CALLSCM(DELETE_CAR, v->m_nGtaID);
-    Game::m_pVehiclePool->Remove(v);
+    Game::RemoveVehicle(vehId);
 }
 
 void SAMPRPC::DoRPCs(bool bUnregister)
@@ -533,15 +573,20 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(SetPlayerArmour); // 66
     BINDRPC(SetSpawnInfo); // 68
     BINDRPC(DisplayGameText); // 73
+    BINDRPC(ForceSpawnSelection); // 74
+    BINDRPC(SetFightingStyle); // 89
+    BINDRPC(NumberPlate); // 123
     BINDRPC(RequestClass); // 128
     BINDRPC(RequestSpawn); // 129
     BINDRPC(ServerJoin); // 137
+    BINDRPC(ServerQuit); // 138
     BINDRPC(InitGame); // 139
     BINDRPC(DisableMapIcon); // 144
     BINDRPC(Weather); // 152
     BINDRPC(SetInterior); // 156
     BINDRPC(SetCameraPos); // 157
     BINDRPC(SetCameraLookAt); // 158
+    BINDRPC(WorldPlayerRemove); // 163
     BINDRPC(WorldVehicleAdd); // 164
     BINDRPC(WorldVehicleRemove); // 165
 }

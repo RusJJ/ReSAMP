@@ -13,6 +13,7 @@ class CLocalPlayer
 public:
     static void                 GetMe();
     static void                 PutMeInPool(int id);
+    static void                 ForceSpawnSelection();
     static void                 Update();
     static void                 Spawn();
     static void                 SetModelIndex(int mdlIdx);

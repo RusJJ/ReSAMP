@@ -1,6 +1,7 @@
 #ifndef __SAGAME_H
 #define __SAGAME_H
 
+#include "GTASA_STRUCTS.h"
 #include <time.h>
 
 #include <third/jpool.h>
@@ -10,6 +11,8 @@
 #include <pools/remotemapicon.h>
 
 #define MAX_BUILDINGS_TO_REMOVE  1000
+
+extern CBaseModelInfo** ms_modelInfoPtrs;
 
 struct BuildingToRemove
 {
@@ -63,8 +66,10 @@ public:
     static void InitializeGameClass();
 
     static CRemotePlayer* CreatePlayer(int id, int skin, float x, float y, float z, float rot, bool createMarker);
+    static void RemovePlayerFromWorld(CRemotePlayer* p); // sad :(
     static CRemoteVehicle* CreateVehicle(int id, int type, float x, float y, float z, float rot);
     static CRemoteVehicle* CreateVehicle(VehicleData& data);
+    static void RemoveVehicle(uint16_t vehId);
 
     static bool IsModelLoaded(int modelId);
     static void RequestModel(int modelId);
@@ -100,6 +105,9 @@ public:
     static void ToggleCJWalk(bool enable);
     static uint32_t CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle);
     static void AddEntityToWorld(CEntity* ent, bool remove);
+    static void DropEveryoneFromVehicle(CVehicle*);
+    static void UpdateGameMatrix(CMatrix*);
+    static void SetVehiclePlate(CVehicle*, const char*);
 
     static inline uint32_t GetTick()
     {

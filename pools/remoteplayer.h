@@ -26,6 +26,7 @@ public:
     bool Spawn();
     void Update();
     bool IsActive();
+    void KillBlip();
     void SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog);
     inline void SetName(const char* newname) { snprintf(m_szName, sizeof(m_szName), "%s", newname); }
 
@@ -40,6 +41,7 @@ public:
     CVector m_vecMarkerPos;
     CPlayerPed* m_pEntity;
     bool m_bOnfootDataChanged;
+    bool m_bIncarDataChanged;
 
     ONFOOT_SYNC_DATA    m_ofSync;
     INCAR_SYNC_DATA     m_icSync;

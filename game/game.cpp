@@ -41,6 +41,10 @@ void (*AddBigMessage)(uint16_t*, uint32_t, uint16_t);
 void (*AsciiToGxt)(const char*, uint16_t*);
 void (*WorldAdd)(CEntity*);
 void (*WorldRemove)(CEntity*);
+void (*CopyToRwMatrix)(CMatrix*, CMatrix*);
+void (*ClearCarPlate)(CVehicle*);
+void (*CreateCarPlate)(CVehicle*, CVehicleModelInfo*);
+void (*VMISetPlateText)(CVehicleModelInfo*, const char*);
 
 // STATIC INITIALIZATION
 uint16_t* Game::m_pLatestBigMessage = new uint16_t[0xFF] {0};
@@ -98,6 +102,10 @@ void Game::InitializeGameClass()
     SET_TO(AsciiToGxt,                 aml->GetSym(hGTASA, "_Z14AsciiToGxtCharPKcPt"));
     SET_TO(WorldAdd,                   aml->GetSym(hGTASA, "_ZN6CWorld3AddEP7CEntity"));
     SET_TO(WorldRemove,                aml->GetSym(hGTASA, "_ZN6CWorld6RemoveEP7CEntity"));
+    SET_TO(CopyToRwMatrix,             aml->GetSym(hGTASA, "_ZNK7CMatrix14CopyToRwMatrixEP11RwMatrixTag"));
+    SET_TO(ClearCarPlate,              aml->GetSym(hGTASA, "_ZN8CVehicle29CustomCarPlate_TextureDestroyEv"));
+    SET_TO(CreateCarPlate,             aml->GetSym(hGTASA, "_ZN8CVehicle28CustomCarPlate_TextureCreateEP17CVehicleModelInfo"));
+    SET_TO(VMISetPlateText,            aml->GetSym(hGTASA, "_ZN17CVehicleModelInfo21SetCustomCarPlateTextEPc"));
 }
 
 void Game::ShowBigMsg(const char* msg, int time, int type)
@@ -148,6 +156,12 @@ CRemotePlayer* Game::CreatePlayer(int id, int skin, float x, float y, float z, f
     return player;
 }
 
+void Game::RemovePlayerFromWorld(CRemotePlayer* p)
+{
+    p->m_byteState = PLAYER_STATE_NONE;
+    CALLSCM(DELETE_PLAYER, p->m_nGtaID);
+}
+
 CRemoteVehicle* Game::CreateVehicle(int id, int type, float x, float y, float z, float rot)
 {
     CRemoteVehicle* vehicle = m_pVehiclePool->AllocAt(id, true);
@@ -185,12 +199,23 @@ CRemoteVehicle* Game::CreateVehicle(VehicleData& data)
 
         if( vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_BIKE && vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_PUSHBIKE)
             vehicle->m_pEntity->GetPosition().z = data.vecPos.z + 0.25f;
+            
+        //SetVehiclePlate(vehicle->m_pEntity, "SAMP037"); // TODO: Remove this?
     }
     
     CALLSCM(ADD_BLIP_FOR_CAR_OLD, vehicle->m_nGtaID, 1, 2, &vehicle->m_nMarkerID);
     CALLSCM(CHANGE_BLIP_COLOUR, vehicle->m_nMarkerID, 0xFFFFFFAA); // 200
     
     return vehicle;
+}
+
+void Game::RemoveVehicle(uint16_t vehId)
+{
+    CRemoteVehicle* v = Game::m_pVehiclePool->GetAt(vehId);
+    if(v->m_nMarkerID) CALLSCM(REMOVE_BLIP, v->m_nMarkerID);
+    DropEveryoneFromVehicle(v->m_pEntity);
+    CALLSCM(DELETE_CAR, v->m_nGtaID);
+    Game::m_pVehiclePool->Remove(v);
 }
 
 bool Game::IsModelLoaded(int modelId)
@@ -497,4 +522,49 @@ void Game::AddEntityToWorld(CEntity* ent, bool remove)
     {
         WorldAdd(ent);
     }
+}
+
+void Game::DropEveryoneFromVehicle(CVehicle* v)
+{
+    uint16_t pid;
+    CVector* pos;
+    if(v->m_pDriver)
+    {
+        pid = GetSAMPPlayerID(v->m_pDriver);
+        CRemotePlayer* p = pid!=0xFFFF ? m_pPlayerPool->GetAt(pid) : NULL;
+        if(p)
+        {
+            pos = &p->m_pEntity->GetPosition();
+            CALLSCM(WARP_CHAR_FROM_CAR_TO_COORD, m_pPlayerPool->GetAt(pid)->m_nGtaID, pos->x, pos->y, pos->z);
+        }
+    }
+    for(uint8_t i = 0; i < 7; ++i)
+    {
+        if(v->m_pPassenger[i])
+        {
+            pid = GetSAMPPlayerID(v->m_pPassenger[i]);
+            if(pid == 0xFFFF) continue;
+            CRemotePlayer* p = m_pPlayerPool->GetAt(pid);
+            if(p)
+            {
+                pos = &p->m_pEntity->GetPosition();
+                CALLSCM(WARP_CHAR_FROM_CAR_TO_COORD, m_pPlayerPool->GetAt(pid)->m_nGtaID, pos->x, pos->y, pos->z);
+            }
+        }
+    }
+}
+
+void Game::UpdateGameMatrix(CMatrix* m)
+{
+    CopyToRwMatrix(m, m);
+}
+
+void Game::SetVehiclePlate(CVehicle* v, const char* t)
+{
+    if(v->m_nType != ENTITY_TYPE_VEHICLE) return;
+    
+    ClearCarPlate(v);
+    CVehicleModelInfo* vi = (CVehicleModelInfo*)ms_modelInfoPtrs[v->m_nModelIndex];
+    VMISetPlateText(vi, t);
+    CreateCarPlate(v, vi);
 }

@@ -29,37 +29,68 @@ void CRemotePlayer::Update()
         return;
     }
     
-    if(m_nMarkerID >= 0)
-    {
-        CALLSCM(REMOVE_BLIP, m_nMarkerID);
-    }
-
+    KillBlip();
     m_nMarkerID = Game::CreateRadarMarkerIcon(0, m_vecMarkerPos.x, m_vecMarkerPos.y, m_vecMarkerPos.z, m_nID, 0);
     
     if(!m_pEntity) return;
     
     //m_pEntity->m_fHealth = (float)m_ofSync.byteHealth;
-    if(m_byteState == PLAYER_STATE_ONFOOT)
+    switch(m_byteState)
     {
-        SetKeys(m_ofSync.wKeys, m_ofSync.lrAnalog, m_ofSync.udAnalog);
-        m_pEntity->m_vecMoveSpeed = CVector(0);
-        
-        if(m_bOnfootDataChanged)
+        case PLAYER_STATE_ONFOOT:
         {
-            Game::AddEntityToWorld(m_pEntity, true); // Start changes
-            m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
-            m_pEntity->GetPosition() = m_ofSync.vecPos;
-            m_pEntity->m_vecMoveSpeed = m_ofSync.vecMoveSpeed;
-            Game::AddEntityToWorld(m_pEntity, false); // End changes!
+            if(m_pEntity->m_pVehicle && m_bOnfootDataChanged)
+            {
+                // Force leave a car
+            }
             
-            m_bOnfootDataChanged = false;
+            SetKeys(m_ofSync.wKeys, m_ofSync.lrAnalog, m_ofSync.udAnalog);
+            m_pEntity->m_vecMoveSpeed = CVector(0);
+        
+            if(m_bOnfootDataChanged)
+            {
+                m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
+                m_pEntity->GetPosition() = m_ofSync.vecPos;
+                m_pEntity->m_vecMoveSpeed = m_ofSync.vecMoveSpeed;
+                Game::UpdateGameMatrix(m_pEntity->m_matrix); // Need it
+            
+                m_bOnfootDataChanged = false;
+            }
+            break;
         }
+        case PLAYER_STATE_DRIVER:
+        {
+            // That means we're IN the car
+            // Because we got syncing data
+            if(!m_pEntity->m_pVehicle && m_bIncarDataChanged)
+            {
+                // Force enter a car
+            }
+            
+            if(m_pEntity->m_pVehicle)
+            {
+                
+            }
+            break;
+        }
+        
+        default: // Broken? Or unimplemented?
+            break;
     }
 }
 
 bool CRemotePlayer::IsActive() // TODO: Check thiz
 {
     return (!m_bIsLocal && m_byteState != PLAYER_STATE_NONE);
+}
+
+void CRemotePlayer::KillBlip()
+{
+    if(m_nMarkerID >= 0)
+    {
+        CALLSCM(REMOVE_BLIP, m_nMarkerID);
+        m_nMarkerID = 0;
+    }
 }
 
 void CRemotePlayer::SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog)
