@@ -13,6 +13,7 @@
 
 #define RAKDATA(_PARAMS) int dataLen = ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1; RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), dataLen, false)
 #define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]); delete[] out;
+#define GUARDSTACK(_VARIN, _VAROF) if(_VARIN >= sizeof(_VAROF)) _VARIN = sizeof(_VAROF)-1
 
 
 ONRPC(SetPlayerName)
@@ -28,7 +29,7 @@ ONRPC(SetPlayerName)
     if(!p) return;
     
     bsData.Read(byteLen);
-    if(byteLen >= MAX_PLAYER_NAME) byteLen = MAX_PLAYER_NAME - 1;
+    GUARDSTACK(byteLen, szName);
     bsData.Read(szName, byteLen);
     szName[byteLen] = 0;
     
@@ -43,7 +44,6 @@ ONRPC(SetPlayerPos)
     bsData.Read(vecPos.y);
 	bsData.Read(vecPos.z);
     
-    //CLocalPlayer::GetEntity()->GetPosition() = vecPos;
     CLocalPlayer::GetEntity()->Teleport(vecPos);
     Game::RefreshStreamingAt(vecPos.m_vec2D);
 }
@@ -106,9 +106,9 @@ ONRPC(SetPlayerFacingAngle)
     float fAngle;
     bsData.Read(fAngle);
     
+    CLocalPlayer::GetEntity()->m_fRotation1 = DegToRad(fAngle);
+    CLocalPlayer::GetEntity()->m_fRotation2 = DegToRad(fAngle);
     CALLSCM(SET_CHAR_ROTATION, CLocalPlayer::GetGtaID(), 0.0f, 0.0f, fAngle);
-    //CLocalPlayer::GetEntity()->m_fRotation1 = DegToRad(fAngle);
-    //CLocalPlayer::GetEntity()->m_fRotation2 = DegToRad(fAngle);
 }
 ONRPC(ResetPlayerMoney)
 {
@@ -183,7 +183,6 @@ ONRPC(WorldPlayerAdd)
     pRemotePlayer->m_pEntity->m_fHealth = 100.0f;
     pRemotePlayer->m_pEntity->m_fArmour = 0.0f;
     CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, pRemotePlayer->m_nGtaID, (int)byteFightingStyle, 6);
-    //pRemotePlayer->m_pEntity->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
 }
 ONRPC(SetPlayerShopName)
 {
@@ -193,20 +192,31 @@ ONRPC(SetPlayerShopName)
     char shopname[32];
     
     bsData.Read(byteLen);
-    if(byteLen >= 32) byteLen = 31;
+    GUARDSTACK(byteLen, shopname);
     bsData.Read(shopname, byteLen);
     shopname[byteLen] = 0;
     
     CALLSCM(LOAD_SHOP, shopname);
 }
+ONRPC(SetPlayerSkillLevel)
+{
+    RAKDATA(params);
+    
+    uint16_t playerId, skillLevel;
+    uint32_t skillId;
+    
+    bsData.Read(playerId);
+    bsData.Read(skillId);
+    bsData.Read(skillLevel);
+    if(skillLevel > 999) skillLevel = 999;
+    
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(playerId);
+    if(p) p->SetWeaponSkill(skillId, skillLevel);
+}
 ONRPC(SetPlayerDrunkLevel)
 {
     RAKDATA(params);
     
-    // TODO:
-    // 50000+ lvl?
-    // Obviously there's some other logic, 
-    // than just set player drunkess
     int32_t lvl;
     bsData.Read(lvl);
     if(lvl > 50000) lvl = 50000;
@@ -304,6 +314,8 @@ ONRPC(SetMapIcon)
 }
 ONRPC(DialogBox)
 {
+    RAKDATA(params);
+    
     logger->Info("DialogBox");
     
     dialogui->SetDrawable(true);
@@ -312,10 +324,10 @@ ONRPC(SetPlayerArmour)
 {
     RAKDATA(params);
     
-    float fHealth;
-    bsData.Read(fHealth);
+    float fArmour;
+    bsData.Read(fArmour);
     
-    CLocalPlayer::GetEntity()->m_fArmour = fHealth;
+    CLocalPlayer::GetEntity()->m_fArmour = fArmour;
 }
 ONRPC(SetSpawnInfo)
 {
@@ -335,10 +347,10 @@ ONRPC(DisplayGameText)
     bsData.Read(iTime);
     bsData.Read(iLength);
 
-    if(iLength >= 512) iLength = 511;
+    GUARDSTACK(iLength, szMessage);
 
     bsData.Read(szMessage, iLength);
-	szMessage[iLength] = '\0';
+	szMessage[iLength] = 0;
     
     CALLSCM(CLEAR_PRINTS);
     Game::ShowBigMsg(szMessage, iTime, iType);
@@ -377,7 +389,6 @@ ONRPC(SetFightingStyle)
     uint8_t byteFightingStyle = 4;
     bsData.Read(byteFightingStyle);
     CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, CLocalPlayer::GetGtaID(), (int)byteFightingStyle, 6);
-    //CLocalPlayer::GetEntity()->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
 }
 ONRPC(SetPlayerVelocity)
 {
@@ -412,6 +423,7 @@ ONRPC(ClientMessage)
     
     bsData.Read(color);
     bsData.Read(byteLen);
+    GUARDSTACK(byteLen, msg);
     bsData.Read(msg, byteLen);
     msg[byteLen] = 0;
     
@@ -422,11 +434,11 @@ ONRPC(NumberPlate)
     RAKDATA(params);
     
     uint16_t vehId;
-    uint8_t byteLen; char plateTxt[16];
+    uint8_t byteLen; char plateTxt[12];
     
     bsData.Read(vehId);
     bsData.Read(byteLen);
-    if(byteLen >= 16) byteLen = 15;
+    GUARDSTACK(byteLen, plateTxt);
     bsData.Read(plateTxt, byteLen);
     plateTxt[byteLen] = 0;
     
@@ -477,7 +489,7 @@ ONRPC(ServerJoin)
     bsData.Read(color);
     bsData.Read(bIsNPC);
     bsData.Read(byteNameLen);
-    if(byteNameLen >= MAX_PLAYER_NAME) byteNameLen = MAX_PLAYER_NAME-1;
+    GUARDSTACK(byteNameLen, szPlayerName);
     bsData.Read(szPlayerName, (int)byteNameLen);
     szPlayerName[byteNameLen] = 0;
     
@@ -710,6 +722,7 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(ToggleClock); // 30
     BINDRPC(WorldPlayerAdd); // 32
     BINDRPC(SetPlayerShopName); // 33
+    BINDRPC(SetPlayerSkillLevel); // 34
     BINDRPC(SetPlayerDrunkLevel); // 35
     BINDRPC(RemovePlayerBuilding); // 43
     BINDRPC(CreateObject); // 44

@@ -109,6 +109,7 @@ public:
     static void UpdateGameMatrix(CMatrix*);
     static void SetVehiclePlate(CVehicle*, const char*);
     static float GetFPS();
+    static float& GetFloatStat(uint8_t statId);
 
     static inline uint32_t GetTick()
     {

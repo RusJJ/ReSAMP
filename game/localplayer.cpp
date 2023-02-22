@@ -279,23 +279,30 @@ void CLocalPlayer::CheckWorldBorders()
 {
     if(m_byteLastInteriorId != 0) return;
     
-    CVector* ppos;
-    if(m_pEntity->m_pVehicle) ppos = &m_pEntity->m_pVehicle->GetPosition();
-    else ppos = &m_pEntity->GetPosition();
-    
-    CVector& pos = *ppos; // lazy. it will be the same in asm
+    CVector& pos = m_pEntity->GetPosition();
     if(pos.x > samp->GetWorldBorderMax()->x || pos.x < samp->GetWorldBorderMin()->x ||
        pos.y > samp->GetWorldBorderMax()->y || pos.y < samp->GetWorldBorderMin()->y)
     {
          float angle = atan2(pos.y - m_vecWorldBorderCenter.y, pos.x - m_vecWorldBorderCenter.x);
-         CVector vecAngled = CVector(-WORLDBORDER_FORCESPEED * cos(angle), -WORLDBORDER_FORCESPEED * sin(angle), 0.5f * WORLDBORDER_FORCESPEED);
-         
-         if(m_pEntity->m_PedFlags.bIsStanding)
+         CVector vecAngled = CVector(-WORLDBORDER_FORCESPEED * cos(angle), -WORLDBORDER_FORCESPEED * sin(angle), 0.45f * WORLDBORDER_FORCESPEED);
+        
+         if(m_pEntity->m_pVehicle && m_pEntity == m_pEntity->m_pVehicle->m_pDriver)
          {
-             pos.z += 0.04f;
-             m_pEntity->FlushTasks();
+             m_pEntity->m_pVehicle->GetPosition().z += 0.04f;
+             CMatrixLink save = *m_pEntity->m_pVehicle->m_matrix;
+             m_pEntity->m_pVehicle->Teleport(m_pEntity->m_pVehicle->GetPosition());
+             m_pEntity->m_pVehicle->m_vecMoveSpeed = vecAngled;
+             *m_pEntity->m_pVehicle->m_matrix = save;
          }
-         m_pEntity->m_vecMoveSpeed = vecAngled;
+         else
+         {
+             if(m_pEntity->m_PedFlags.bIsStanding || m_pEntity->physicalFlags.bTouchingWater || m_pEntity->IsPassenger())
+             {
+                 pos.z += 0.04f;
+                 m_pEntity->FlushTasks(); // Drops off from car + updates
+             }
+             m_pEntity->m_vecMoveSpeed = vecAngled;
+         }
          
          SetArmedWeapon(0);
          CALLSCM(CLEAR_PRINTS);

@@ -80,8 +80,8 @@ public:
     inline RakClientInterface*      GetRakClient() { return m_pRakClient; };
     inline int                      GetGameState() { return m_nGameState; }
     inline void                     SetGameState(char gameState) { m_nGameState = gameState; }
-    inline CVector*                 GetWorldBorderMin() { return m_vecWorldBorderMin; }
-    inline CVector*                 GetWorldBorderMax() { return m_vecWorldBorderMax; }
+    inline CVector2D*               GetWorldBorderMin() { return &m_vecWorldBorderMin; }
+    inline CVector2D*               GetWorldBorderMax() { return &m_vecWorldBorderMax; }
     inline ServerVariables&         GetServerVars() { return m_vars; }
 
 public:
@@ -93,8 +93,8 @@ public:
     unsigned short                  m_iPort;
     char                            m_nGameState;
     RakClientInterface*             m_pRakClient;
-    CVector*                        m_vecWorldBorderMin;
-    CVector*                        m_vecWorldBorderMax;
+    CVector2D                       m_vecWorldBorderMin;
+    CVector2D                       m_vecWorldBorderMax;
 
     ServerVariables                 m_vars;
 };

@@ -40,8 +40,8 @@ SAMPNet::SAMPNet()
 
     m_pRakClient = RakNetworkFactory::GetRakClientInterface();
 
-    m_vecWorldBorderMin = new CVector(-20000.0f, -20000.0f, -500.0f);
-    m_vecWorldBorderMax = new CVector(20000.0f, 20000.0f, 20000.0f);
+    m_vecWorldBorderMin = CVector2D(-20000.0f, -20000.0f);
+    m_vecWorldBorderMax = CVector2D(20000.0f, 20000.0f);
 
     m_bStartedForConnecting = false;
     Game::ToggleClock(false);

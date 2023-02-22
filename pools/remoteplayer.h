@@ -4,6 +4,8 @@
 #include <samp.h>
 #include <sampnet/samp_syncdata.h>
 
+#define MAX_SKILL_WEAPONS 11
+
 #define PLAYER_STATE_NONE						0
 #define PLAYER_STATE_EXIT_VEHICLE				4
 #define PLAYER_STATE_ENTER_VEHICLE_DRIVER		5
@@ -29,6 +31,7 @@ public:
     void KillBlip();
     void SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog);
     void SetModelIndex(int mdlIdx);
+    void SetWeaponSkill(int skill, uint16_t lvl);
     inline void SetName(const char* newname) { snprintf(m_szName, sizeof(m_szName), "%s", newname); }
 
 public:
@@ -43,6 +46,7 @@ public:
     CPlayerPed* m_pEntity;
     bool m_bOnfootDataChanged;
     bool m_bIncarDataChanged;
+    uint16_t m_nWeaponSkills[MAX_SKILL_WEAPONS];
 
     ONFOOT_SYNC_DATA    m_ofSync;
     INCAR_SYNC_DATA     m_icSync;

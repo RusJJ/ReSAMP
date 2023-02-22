@@ -19,6 +19,11 @@ CRemotePlayer::CRemotePlayer()
     m_pEntity = NULL;
     m_bOnfootDataChanged = false;
     memset(m_szName, sizeof(m_szName), 0);
+    
+    for(uint8_t i = 0; i < MAX_SKILL_WEAPONS; ++i)
+    {
+        SetWeaponSkill(i, 999);
+    }
 }
 
 void CRemotePlayer::Update()
@@ -96,6 +101,8 @@ void CRemotePlayer::KillBlip()
 
 void CRemotePlayer::SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog)
 {
+    if(m_bIsLocal) return;
+    
     PAD_KEYS *pad = &RemotePlayerKeys[m_nID];
 
     // LEFT/RIGHT
@@ -155,4 +162,15 @@ void CRemotePlayer::SetModelIndex(int mdlIdx)
     if(mdlIdx < 0 || mdlIdx > 315) return;
     Game::RequestModelNow(mdlIdx);
     m_pEntity->SetModelIndex(mdlIdx);
+}
+
+void CRemotePlayer::SetWeaponSkill(int skill, uint16_t lvl)
+{
+    if(skill < 0 || skill >= MAX_SKILL_WEAPONS) return;
+    
+    if(lvl > 999) lvl = 999;
+    else if(lvl < 0) lvl = 0;
+    
+    m_nWeaponSkills[skill] = lvl;
+    if(m_bIsLocal) Game::GetFloatStat(skill + WEAPONTYPE_PISTOL_SKILL) = (float)lvl;
 }

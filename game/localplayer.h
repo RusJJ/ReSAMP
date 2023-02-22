@@ -6,7 +6,7 @@
 #include <gtasa.h>
 #include <sampnet/samp_syncdata.h>
 
-#define WORLDBORDER_FORCESPEED 0.4f
+#define WORLDBORDER_FORCESPEED 0.3f
 
 class CRemotePlayer;
 

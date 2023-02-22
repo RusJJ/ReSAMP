@@ -14,6 +14,7 @@ BuildingToRemove* g_RemoveBuilding[MAX_BUILDINGS_TO_REMOVE] {0};
 
 // Something..?
 static float* game_FPS;
+static float* StatTypesFloat;
 // Game::SetWorldTime
 static char* ms_nGameClockHours;
 static char* ms_nGameClockMinutes;
@@ -61,6 +62,7 @@ JPoolCalcHighest<CRemoteMapIcon>* Game::m_pMapIconPool = NULL;
 void Game::InitializeGameClass()
 {
     SET_TO(game_FPS,                   aml->GetSym(hGTASA, "_ZN6CTimer8game_FPSE"));
+    SET_TO(StatTypesFloat,             aml->GetSym(hGTASA, "_ZN6CStats14StatTypesFloatE"));
     
     // Game::SetWorldTime
     SET_TO(ms_nGameClockHours,         aml->GetSym(hGTASA, "_ZN6CClock18ms_nGameClockHoursE"));
@@ -578,4 +580,9 @@ void Game::SetVehiclePlate(CVehicle* v, const char* t)
 float Game::GetFPS()
 {
     return *game_FPS;
+}
+
+float& Game::GetFloatStat(uint8_t statId)
+{
+    return StatTypesFloat[statId];
 }
