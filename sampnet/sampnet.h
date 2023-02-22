@@ -84,6 +84,7 @@ public:
                                     CLSPAK(ConnectionLost);
                                     CLSPAK(ConnectionAccepted);
                                     CLSPAK(FailedToAuth);
+                                    CLSPAK(AimSync);
                                     CLSPAK(PlayerSync);
                                     CLSPAK(MarkerSync);
 

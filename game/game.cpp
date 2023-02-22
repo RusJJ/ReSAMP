@@ -121,7 +121,8 @@ void Game::ClearWeapons()
 
 void Game::GiveWeapon(int weapId, int ammo, bool armed)
 {
-    GivePedWeapon(CLocalPlayer::GetEntity(), (eWeaponType)weapId, ammo, true);
+    int slot = GivePedWeapon(CLocalPlayer::GetEntity(), (eWeaponType)weapId, ammo, true);
+    if(armed) CLocalPlayer::SetArmedWeapon(slot);
 }
 
 void Game::ShowWidgets(bool enabled)
@@ -200,7 +201,7 @@ CRemoteVehicle* Game::CreateVehicle(VehicleData& data)
         if( vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_BIKE && vehicle->m_pEntity->m_nVehicleSubType != VEHICLE_SUBTYPE_PUSHBIKE)
             vehicle->m_pEntity->GetPosition().z = data.vecPos.z + 0.25f;
             
-        //SetVehiclePlate(vehicle->m_pEntity, "SAMP037"); // TODO: Remove this?
+        SetVehiclePlate(vehicle->m_pEntity, "SAMP 0.3.7-R5"); // TODO: Remove this?
     }
     
     CALLSCM(ADD_BLIP_FOR_CAR_OLD, vehicle->m_nGtaID, 1, 2, &vehicle->m_nMarkerID);
@@ -559,6 +560,7 @@ void Game::UpdateGameMatrix(CMatrix* m)
     CopyToRwMatrix(m, m);
 }
 
+// Changes 1/2 plates! WHY
 void Game::SetVehiclePlate(CVehicle* v, const char* t)
 {
     if(v->m_nType != ENTITY_TYPE_VEHICLE) return;

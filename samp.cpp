@@ -8,8 +8,8 @@ uintptr_t pJumpOutTo;
 bool bSAMPStarted = false;
 
 // Things from GTASA library to make our injects correct
-uintptr_t TheCamera;
-void (*RenderMotionBlur)(uintptr_t camera);
+CCamera* TheCamera;
+void (*RenderMotionBlur)(CCamera* camera);
 void (*Render2DStuff)();
 
 extern "C" void InGameLoop()
@@ -42,7 +42,7 @@ __attribute__((optnone)) __attribute__((naked)) void GameIdleLoop_stub(void)
 void InitializeSAMP()
 {
     pJumpOutTo = pGTASA + 0x3F6BEC + 0x1;
-    TheCamera = aml->GetSym(hGTASA, "TheCamera");
+    TheCamera = (CCamera*)aml->GetSym(hGTASA, "TheCamera");
     SET_TO(RenderMotionBlur, aml->GetSym(hGTASA, "_ZN7CCamera16RenderMotionBlurEv"));
     SET_TO(Render2DStuff, aml->GetSym(hGTASA, "_Z13Render2dStuffv"));
     aml->Redirect(pGTASA + 0x3F6BE4 + 0x1, (uintptr_t)GameIdleLoop_stub);

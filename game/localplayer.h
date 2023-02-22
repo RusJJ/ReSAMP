@@ -6,6 +6,8 @@
 #include <gtasa.h>
 #include <sampnet/samp_syncdata.h>
 
+#define WORLDBORDER_FORCESPEED 0.8f
+
 class CRemotePlayer;
 
 class CLocalPlayer
@@ -23,7 +25,10 @@ public:
     static void                 RequestSpawn();
     static void                 SetInterior(uint8_t id);
     static uint16_t             GetMyKillerID();
+    static void                 CheckWorldBorders();
+    static void                 SetArmedWeapon(int slot);
 
+    static void                 SendSyncData_Aim();
     static void                 SendSyncData_OnFoot();
     static void                 SendSyncData_InCar();
 
@@ -34,6 +39,7 @@ public:
     static inline int           GetGtaID() { return m_nGtaID; }
 
 public:
+    static CVector2D            m_vecWorldBorderCenter;
     static bool                 m_bDisableControls;
     static bool                 m_bWaitingToSpawn;
     static bool                 m_bWasInCar;
@@ -42,7 +48,7 @@ public:
     static bool                 m_bWasted;
     static bool                 m_bClassChangeRequested;
     
-private:
+public:
     static CRemotePlayer*       m_pRemote;
     static short                m_nChosenClassId;
     static int                  m_nID;

@@ -50,7 +50,8 @@ void CRemotePlayer::Update()
             if(m_bOnfootDataChanged)
             {
                 m_ofSync.quat.GetMatrix(m_pEntity->m_matrix);
-                m_pEntity->GetPosition() = m_ofSync.vecPos;
+                m_pEntity->Teleport(m_ofSync.vecPos);
+                //m_pEntity->GetPosition() = m_ofSync.vecPos;
                 m_pEntity->m_vecMoveSpeed = m_ofSync.vecMoveSpeed;
                 Game::UpdateGameMatrix(m_pEntity->m_matrix); // Need it
             
@@ -147,4 +148,11 @@ void CRemotePlayer::SetKeys(uint16_t wKeys, uint16_t lrAnalog, uint16_t udAnalog
     wKeys >>= 1;
     // KEY_ANALOG_RIGHT
     pad->bKeys[ePadKeys::KEY_ANALOG_RIGHT] = (wKeys & 1);
+}
+
+void CRemotePlayer::SetModelIndex(int mdlIdx)
+{
+    if(mdlIdx < 0 || mdlIdx > 315) return;
+    Game::RequestModelNow(mdlIdx);
+    m_pEntity->SetModelIndex(mdlIdx);
 }

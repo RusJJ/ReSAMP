@@ -8,12 +8,32 @@
 #include <game/scripting.h>
 #include <game/localplayer.h>
 #include <ui/spawnscreen.h>
+#include <ui/dialogbox.h>
 #include <pools/remoteplayer.h>
 
 #define RAKDATA(_PARAMS) int dataLen = ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1; RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), dataLen, false)
 #define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]);
 
 
+ONRPC(SetPlayerName)
+{
+    RAKDATA(params);
+    
+    uint16_t playerId;
+    uint8_t byteLen;
+    char szName[MAX_PLAYER_NAME];
+    
+    bsData.Read(playerId);
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(playerId);
+    if(!p) return;
+    
+    bsData.Read(byteLen);
+    if(byteLen >= MAX_PLAYER_NAME) byteLen = MAX_PLAYER_NAME - 1;
+    bsData.Read(szName, byteLen);
+    szName[byteLen] = 0;
+    
+    snprintf(p->m_szName, MAX_PLAYER_NAME, "%s", szName);
+}
 ONRPC(SetPlayerPos)
 {
     RAKDATA(params);
@@ -23,7 +43,8 @@ ONRPC(SetPlayerPos)
     bsData.Read(vecPos.y);
 	bsData.Read(vecPos.z);
     
-    CLocalPlayer::GetEntity()->GetPosition() = vecPos;
+    //CLocalPlayer::GetEntity()->GetPosition() = vecPos;
+    CLocalPlayer::GetEntity()->Teleport(vecPos);
     Game::RefreshStreamingAt(vecPos.m_vec2D);
 }
 ONRPC(SetPlayerHealth)
@@ -64,6 +85,13 @@ ONRPC(SetPlayerWorldBounds)
     bsData.Read(samp->GetWorldBorderMin()->x);
     bsData.Read(samp->GetWorldBorderMax()->y);
     bsData.Read(samp->GetWorldBorderMin()->y);
+    
+    CLocalPlayer::m_vecWorldBorderCenter = CVector2D(
+        0.5f * (samp->GetWorldBorderMax()->x - samp->GetWorldBorderMin()->x),
+        0.5f * (samp->GetWorldBorderMax()->y - samp->GetWorldBorderMin()->y)
+    );
+    
+    logger->Info("Border %f %f %f %f", samp->GetWorldBorderMax()->x, samp->GetWorldBorderMin()->x, samp->GetWorldBorderMax()->y, samp->GetWorldBorderMin()->y);
 }
 ONRPC(GivePlayerMoney)
 {
@@ -80,8 +108,9 @@ ONRPC(SetPlayerFacingAngle)
     float fAngle;
     bsData.Read(fAngle);
     
-    CLocalPlayer::GetEntity()->m_fRotation1 = DegToRad(fAngle);
-    CLocalPlayer::GetEntity()->m_fRotation2 = DegToRad(fAngle);
+    CALLSCM(SET_CHAR_ROTATION, CLocalPlayer::GetGtaID(), 0.0f, 0.0f, fAngle);
+    //CLocalPlayer::GetEntity()->m_fRotation1 = DegToRad(fAngle);
+    //CLocalPlayer::GetEntity()->m_fRotation2 = DegToRad(fAngle);
 }
 ONRPC(ResetPlayerMoney)
 {
@@ -157,6 +186,20 @@ ONRPC(WorldPlayerAdd)
     pRemotePlayer->m_pEntity->m_fArmour = 0.0f;
     CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, pRemotePlayer->m_nGtaID, (int)byteFightingStyle, 6);
     //pRemotePlayer->m_pEntity->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
+}
+ONRPC(SetPlayerShopName)
+{
+    RAKDATA(params);
+    
+    uint8_t byteLen;
+    char shopname[32];
+    
+    bsData.Read(byteLen);
+    if(byteLen >= 32) byteLen = 31;
+    bsData.Read(shopname, byteLen);
+    shopname[byteLen] = 0;
+    
+    CALLSCM(LOAD_SHOP, shopname);
 }
 ONRPC(SetPlayerDrunkLevel)
 {
@@ -257,6 +300,12 @@ ONRPC(SetMapIcon)
     m->m_nID = byteIndex;
     m->m_nGtaID = Game::CreateRadarMarkerIcon(byteIcon, pos.x, pos.y, pos.z, iColor, byteStyle);
 }
+ONRPC(DialogBox)
+{
+    logger->Info("DialogBox");
+    
+    dialogui->SetDrawable(true);
+}
 ONRPC(SetPlayerArmour)
 {
     RAKDATA(params);
@@ -284,7 +333,7 @@ ONRPC(DisplayGameText)
     bsData.Read(iTime);
     bsData.Read(iLength);
 
-    if(iLength > 512) return;
+    if(iLength >= 512) iLength = 511;
 
     bsData.Read(szMessage, iLength);
 	szMessage[iLength] = '\0';
@@ -296,6 +345,29 @@ ONRPC(ForceSpawnSelection)
 {
     CLocalPlayer::ForceSpawnSelection();
 }
+ONRPC(InterpolateCamera)
+{
+    RAKDATA(params);
+    
+    bool bSetPos;
+    uint8_t byteCutType;
+    uint32_t nTime;
+    CVector from, to;
+    bsData.Read(bSetPos);
+    bsData.ReadVector(from.x, from.y, from.z);
+    bsData.ReadVector(to.x, to.y, to.z);
+    bsData.Read(nTime);
+    bsData.Read(byteCutType);
+    
+    if(bSetPos)
+    {
+        CALLSCM(CAMERA_SET_VECTOR_MOVE, from.x, from.y, from.z, to.x, to.y, to.z, nTime, byteCutType - 1);
+    }
+    else
+    {
+        CALLSCM(CAMERA_SET_VECTOR_TRACK, from.x, from.y, from.z, to.x, to.y, to.z, nTime, byteCutType - 1);
+    }
+}
 ONRPC(SetFightingStyle)
 {
     RAKDATA(params);
@@ -305,11 +377,59 @@ ONRPC(SetFightingStyle)
     CALLSCM(GIVE_MELEE_ATTACK_TO_CHAR, CLocalPlayer::GetGtaID(), (int)byteFightingStyle, 6);
     //CLocalPlayer::GetEntity()->m_byteFightingStyle = (eFightingStyle)byteFightingStyle;
 }
+ONRPC(SetPlayerVelocity)
+{
+    if(CLocalPlayer::GetEntity()->m_pVehicle) return;
+    
+    RAKDATA(params);
+    
+    CVector force;
+    bsData.ReadVector(force.x, force.y, force.z);
+    CLocalPlayer::GetEntity()->m_vecMoveSpeed = force;
+}
+ONRPC(SetVehicleVelocity)
+{
+    if(!CLocalPlayer::GetEntity()->m_pVehicle || CLocalPlayer::GetEntity()->IsPassenger()) return;
+    
+    RAKDATA(params);
+    
+    uint8_t forceType;
+    CVector force;
+    bsData.Read(forceType);
+    bsData.ReadVector(force.x, force.y, force.z);
+    if(forceType == 0) CLocalPlayer::GetEntity()->m_pVehicle->m_vecMoveSpeed = force;
+    else if(forceType == 1) CLocalPlayer::GetEntity()->m_pVehicle->m_vecTurnSpeed = force;
+}
+ONRPC(ClientMessage)
+{
+    RAKDATA(params);
+    
+    uint32_t color;
+    uint8_t byteLen;
+    char msg[512];
+    
+    bsData.Read(color);
+    bsData.Read(byteLen);
+    bsData.Read(msg, byteLen);
+    msg[byteLen] = 0;
+    
+    samp->Message(msg);
+}
 ONRPC(NumberPlate)
 {
     RAKDATA(params);
     
-    // uint16_t vehid, uint8_t byteLen, char txt[byteLen]?
+    uint16_t vehId;
+    uint8_t byteLen; char plateTxt[16];
+    
+    bsData.Read(vehId);
+    bsData.Read(byteLen);
+    if(byteLen >= 16) byteLen = 15;
+    bsData.Read(plateTxt, byteLen);
+    plateTxt[byteLen] = 0;
+    
+    CRemoteVehicle* p = Game::m_pVehiclePool->GetAt(vehId);
+    if(p) Game::SetVehiclePlate(p->m_pEntity, plateTxt);
 }
 ONRPC(RequestClass)
 {
@@ -317,6 +437,8 @@ ONRPC(RequestClass)
     uint8_t byteRequestOutcome = 0;
     
     bsData.Read(byteRequestOutcome);
+    logger->Info("RequestClass (%d)", (uint32_t)byteRequestOutcome);
+    
 	bsData.Read((char*)&CLocalPlayer::m_SpawnInfo, sizeof(PLAYER_SPAWN_INFO));
     
     if(byteRequestOutcome)
@@ -353,8 +475,9 @@ ONRPC(ServerJoin)
     bsData.Read(color);
     bsData.Read(bIsNPC);
     bsData.Read(byteNameLen);
+    if(byteNameLen >= MAX_PLAYER_NAME) byteNameLen = MAX_PLAYER_NAME-1;
     bsData.Read(szPlayerName, (int)byteNameLen);
-    szPlayerName[byteNameLen] = '\0';
+    szPlayerName[byteNameLen] = 0;
     
     CRemotePlayer* p = Game::m_pPlayerPool->AllocAt(playerId, true);
     
@@ -380,6 +503,8 @@ ONRPC(ServerQuit)
 }
 ONRPC(InitGame)
 {
+    logger->Info("InitGame");
+    
     RAKDATA(params);
         
     unsigned short MyPlayerID;
@@ -456,6 +581,17 @@ ONRPC(Weather)
     
     samp->GetServerVars().m_byteWeather = byteInterior;
 }
+ONRPC(SetPlayerSkin)
+{
+    RAKDATA(params);
+    
+    uint32_t playerId, skin;
+    bsData.Read(playerId); // Why does it use 32bit val here, lol?
+    bsData.Read(skin);
+    
+    CRemotePlayer* p = Game::m_pPlayerPool->GetAt(playerId);
+    if(p) p->SetModelIndex(skin);
+}
 ONRPC(SetInterior)
 {
     RAKDATA(params);
@@ -486,6 +622,10 @@ ONRPC(SetCameraLookAt)
 	bsData.Read(vecPos.z);
     
     CALLSCM(POINT_CAMERA_AT_POINT, vecPos.x, vecPos.y, vecPos.z, 2);
+}
+ONRPC(SetCameraBehindPlayer)
+{
+    CALLSCM(RESTORE_CAMERA_JUMPCUT);
 }
 ONRPC(WorldPlayerRemove)
 {
@@ -553,6 +693,7 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     if(!bUnregister) logger->Info("Initializing RPCs...");
     else logger->Info("Shutting down RPCs...");
 
+    BINDRPC(SetPlayerName); // 11
     BINDRPC(SetPlayerPos); // 12
     BINDRPC(SetPlayerHealth); // 14
     BINDRPC(TogglePlayerControllable); // 15
@@ -566,15 +707,21 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(SetTimeEx); // 29
     BINDRPC(ToggleClock); // 30
     BINDRPC(WorldPlayerAdd); // 32
+    BINDRPC(SetPlayerShopName); // 33
     BINDRPC(SetPlayerDrunkLevel); // 35
     BINDRPC(RemovePlayerBuilding); // 43
     BINDRPC(CreateObject); // 44
     BINDRPC(SetMapIcon); // 56
+    BINDRPC(DialogBox); // 61
     BINDRPC(SetPlayerArmour); // 66
     BINDRPC(SetSpawnInfo); // 68
     BINDRPC(DisplayGameText); // 73
     BINDRPC(ForceSpawnSelection); // 74
+    BINDRPC(InterpolateCamera); // 82
     BINDRPC(SetFightingStyle); // 89
+    BINDRPC(SetPlayerVelocity); // 90
+    BINDRPC(SetVehicleVelocity); // 91
+    BINDRPC(ClientMessage); // 93
     BINDRPC(NumberPlate); // 123
     BINDRPC(RequestClass); // 128
     BINDRPC(RequestSpawn); // 129
@@ -583,9 +730,11 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(InitGame); // 139
     BINDRPC(DisableMapIcon); // 144
     BINDRPC(Weather); // 152
+    BINDRPC(SetPlayerSkin); // 153
     BINDRPC(SetInterior); // 156
     BINDRPC(SetCameraPos); // 157
     BINDRPC(SetCameraLookAt); // 158
+    BINDRPC(SetCameraBehindPlayer); // 162
     BINDRPC(WorldPlayerRemove); // 163
     BINDRPC(WorldVehicleAdd); // 164
     BINDRPC(WorldVehicleRemove); // 165

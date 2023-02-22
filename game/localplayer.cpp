@@ -8,6 +8,11 @@
 #include "localplayer.h"
 #include "patch/pad.h"
 
+
+
+extern CCamera* TheCamera;
+
+CVector2D CLocalPlayer::m_vecWorldBorderCenter = CVector2D(0, 0);
 bool CLocalPlayer::m_bDisableControls = false;
 bool CLocalPlayer::m_bWaitingToSpawn = false;
 bool CLocalPlayer::m_bWasInCar = false;
@@ -144,6 +149,7 @@ void CLocalPlayer::Update()
             m_bWasInCar = false;
         }
         SendSyncData_OnFoot();
+        CheckWorldBorders();
     }
 }
 
@@ -153,7 +159,9 @@ void CLocalPlayer::Spawn()
     
     Game::ShowWidgets(true);
     m_pEntity = Game::GetPlayerByGtaID(m_nGtaID);
-    m_pEntity->GetPosition() = m_SpawnInfo.vecPos;
+    //m_pEntity->GetPosition() = m_SpawnInfo.vecPos;
+    CALLSCM(SET_CHAR_ROTATION, CLocalPlayer::GetGtaID(), 0.0f, 0.0f, m_SpawnInfo.fRotation);
+    CLocalPlayer::GetEntity()->Teleport(m_SpawnInfo.vecPos);
     CALLSCM(ADD_HOSPITAL_RESTART, m_SpawnInfo.vecPos.x, m_SpawnInfo.vecPos.y, m_SpawnInfo.vecPos.z, m_SpawnInfo.fRotation, 0);
     CALLSCM(RESTORE_CAMERA_JUMPCUT);
     m_bDisableControls = false;
@@ -166,6 +174,7 @@ void CLocalPlayer::Spawn()
 
 void CLocalPlayer::SetModelIndex(int mdlIdx)
 {
+    if(mdlIdx < 0 || mdlIdx > 315) return;
     Game::RequestModelNow(mdlIdx);
     m_pEntity->SetModelIndex(mdlIdx);
 }
@@ -242,9 +251,42 @@ uint16_t CLocalPlayer::GetMyKillerID()
         uint16_t vid = Game::GetSAMPVehID(m_pEntity->m_pDamageEntity);
     }
     
-    
-    
     return 0xFFFF;
+}
+
+void CLocalPlayer::CheckWorldBorders()
+{
+    if(!m_byteLastInteriorId) return;
+    CVector& pos = m_pEntity->GetPosition();
+    
+    if(pos.x > samp->GetWorldBorderMax()->x || pos.x < samp->GetWorldBorderMin()->x ||
+       pos.y > samp->GetWorldBorderMax()->y || pos.y < samp->GetWorldBorderMin()->y)
+    {
+         float angle = atan2(pos.y - m_vecWorldBorderCenter.y, pos.x - m_vecWorldBorderCenter.x);
+         
+         CVector vecAngled = CVector(WORLDBORDER_FORCESPEED * -(90.0f - angle) / 90.0f, WORLDBORDER_FORCESPEED * -(90.0f - angle) / 90.0f, 0.001f);
+         
+         if(m_pEntity->m_PedFlags.bIsStanding)
+         {
+             pos.z += 0.03f;
+         }
+         m_pEntity->m_vecMoveSpeed = vecAngled;
+         
+         SetArmedWeapon(0);
+         CALLSCM(CLEAR_PRINTS);
+         Game::ShowBigMsg("Stay within the ~r~world boundries", 1000, 5);
+    }
+}
+
+void CLocalPlayer::SetArmedWeapon(int slot)
+{
+    CALLSCM(SET_CURRENT_CHAR_WEAPON, m_nGtaID, slot);
+}
+
+void CLocalPlayer::SendSyncData_Aim()
+{
+    m_aimSync.byteCamMode = (uint8_t)TheCamera->m_apCams[0].Mode;
+    m_aimSync.vecAimf = TheCamera->m_apCams[0].Front;
 }
 
 void CLocalPlayer::SendSyncData_OnFoot()

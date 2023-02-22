@@ -130,6 +130,10 @@ DEFPAK(35, FailedToAuth)
     Message("Failed to initialize encryption.");
     SetGameState(GAMESTATE_DISCONNECTED);
 }
+DEFPAK(203, AimSync)
+{
+    
+}
 DEFPAK(207, PlayerSync)
 {
     if(GetGameState() != GAMESTATE_CONNECTED) return;
@@ -353,6 +357,7 @@ void SAMPNet::ProcessPackets()
             PROCPAK(ConnectionLost);
             PROCPAK(ConnectionAccepted);
             PROCPAK(FailedToAuth);
+            PROCPAK(AimSync);
             PROCPAK(PlayerSync);
             PROCPAK(MarkerSync);
 

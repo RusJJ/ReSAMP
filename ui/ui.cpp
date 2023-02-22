@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "spawnscreen.h"
+#include "dialogbox.h"
 
 #include <mod/amlmod.h>
 #include <mod/logger.h>
@@ -10,6 +11,7 @@ IImGui* imgui;
 static void DoDrawUIs()
 {
     spawnui->Draw();
+    dialogui->Draw();
 }
 
 void InitializeDearImGui()

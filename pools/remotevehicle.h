@@ -25,6 +25,7 @@ public:
     int m_nMarkerID;
     CVehicle* m_pEntity;
     bool m_bDoorsLocked;
+    char m_szPlateName[16];
 };
 
 #endif // __VEHICLE_H
