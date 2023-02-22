@@ -12,7 +12,7 @@
 #include <pools/remoteplayer.h>
 
 #define RAKDATA(_PARAMS) int dataLen = ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1; RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), dataLen, false)
-#define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]);
+#define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]); delete[] out;
 
 
 ONRPC(SetPlayerName)
@@ -87,11 +87,9 @@ ONRPC(SetPlayerWorldBounds)
     bsData.Read(samp->GetWorldBorderMin()->y);
     
     CLocalPlayer::m_vecWorldBorderCenter = CVector2D(
-        0.5f * (samp->GetWorldBorderMax()->x - samp->GetWorldBorderMin()->x),
-        0.5f * (samp->GetWorldBorderMax()->y - samp->GetWorldBorderMin()->y)
+        0.5f * (samp->GetWorldBorderMax()->x + samp->GetWorldBorderMin()->x),
+        0.5f * (samp->GetWorldBorderMax()->y + samp->GetWorldBorderMin()->y)
     );
-    
-    logger->Info("Border %f %f %f %f", samp->GetWorldBorderMax()->x, samp->GetWorldBorderMin()->x, samp->GetWorldBorderMax()->y, samp->GetWorldBorderMin()->y);
 }
 ONRPC(GivePlayerMoney)
 {
@@ -209,6 +207,10 @@ ONRPC(SetPlayerDrunkLevel)
     // 50000+ lvl?
     // Obviously there's some other logic, 
     // than just set player drunkess
+    int32_t lvl;
+    bsData.Read(lvl);
+    if(lvl > 50000) lvl = 50000;
+    if(lvl > 0) CLocalPlayer::m_fDrunkLevel = (float)lvl;
 }
 ONRPC(RemovePlayerBuilding)
 {

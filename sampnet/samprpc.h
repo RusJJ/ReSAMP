@@ -154,6 +154,7 @@ DEFRPC(183, ModelUrl);
 DEFRPC(184, FinishDownload);
 DEFRPC(185, DownloadCompleted);
 DEFRPC(201, PlayerRconCommand);
+DEFRPC(205, PlayerStatsSync);
 DEFRPC(255, AdminMapTeleport);
 DEFRPC(255, PickedUpWeapon);
 DEFRPC(255, RespawnVehicle);

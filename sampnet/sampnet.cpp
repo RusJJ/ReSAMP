@@ -71,36 +71,36 @@ DEFPAK(12, AuthKey)
     bsKey.Write((uint8_t)ID_AUTH_KEY);
     bsKey.Write((uint8_t)byteAuthKeyLen);
     bsKey.Write(szAuthKey, byteAuthKeyLen);
-    m_pRakClient->Send(&bsKey, SYSTEM_PRIORITY, RELIABLE, 0);
+    samp->m_pRakClient->Send(&bsKey, SYSTEM_PRIORITY, RELIABLE, 0);
 }
 DEFPAK(29, ConnectionAttemptFailed)
 {
-    Message("The server didn't respond. Retrying...");
-    SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
+    samp->Message("The server didn't respond. Retrying...");
+    samp->SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
 }
 DEFPAK(31, ConnectionNoFree)
 {
-    Message("The server is full. Retrying...");
-    SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
+    samp->Message("The server is full. Retrying...");
+    samp->SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
 }
 DEFPAK(32, ConnectionDisconnected)
 {
-    Message("Server closed the connection.");
-    SetGameState(GAMESTATE_DISCONNECTED);
+    samp->Message("Server closed the connection.");
+    samp->SetGameState(GAMESTATE_DISCONNECTED);
 
-    m_pRakClient->Disconnect(2000);
+    samp->m_pRakClient->Disconnect(2000);
 }
 DEFPAK(33, ConnectionLost)
 {
-    Message("Lost connection to the server. Reconnecting...");
-    SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
+    samp->Message("Lost connection to the server. Reconnecting...");
+    samp->SetGameState(GAMESTATE_ATTEMPT_TO_JOIN);
 }
 DEFPAK(34, ConnectionAccepted)
 {
     unsigned short nMyPlayerID;
     unsigned int uiChallenge;
 
-    SetGameState(GAMESTATE_AWAIT_JOIN);
+    samp->SetGameState(GAMESTATE_AWAIT_JOIN);
 
     RakNet::BitStream bsSuccAuth((unsigned char *)pak->data, pak->length, false);  
     bsSuccAuth.IgnoreBits(8);
@@ -109,35 +109,39 @@ DEFPAK(34, ConnectionAccepted)
     bsSuccAuth.Read(nMyPlayerID);
     bsSuccAuth.Read(uiChallenge);
 
-    snprintf(m_szCurrentPlayerName, sizeof(m_szCurrentPlayerName), "%s", m_szPlayerName);
-    char bNameLen = (char)strlen(m_szCurrentPlayerName);
+    snprintf(samp->m_szCurrentPlayerName, sizeof(samp->m_szCurrentPlayerName), "%s", samp->m_szPlayerName);
+    char bNameLen = (char)strlen(samp->m_szCurrentPlayerName);
     CLocalPlayer::PutMeInPool(nMyPlayerID);
 
     RakNet::BitStream bsSend;
     bsSend.Write(NETGAME_VERSION);
     bsSend.Write((char)0x01); // Should be 1 char!
     bsSend.Write(bNameLen);
-    bsSend.Write(m_szCurrentPlayerName, bNameLen);
+    bsSend.Write(samp->m_szCurrentPlayerName, bNameLen);
     bsSend.Write(uiChallenge ^ NETGAME_VERSION);
     bsSend.Write(SVAR(AUTH_BS));
     bsSend.Write(AUTH_BS, SVAR(AUTH_BS));
     bsSend.Write(SVAR(SAMP_VERSION));
     bsSend.Write(SAMP_VERSION, SVAR(SAMP_VERSION));
-    m_pRakClient->RPC((int*)&RPC_ClientJoin, &bsSend, HIGH_PRIORITY, RELIABLE, 0, false, UNASSIGNED_NETWORK_ID, NULL);
+    samp->m_pRakClient->RPC((int*)&RPC_ClientJoin, &bsSend, HIGH_PRIORITY, RELIABLE, 0, false, UNASSIGNED_NETWORK_ID, NULL);
 }
 DEFPAK(35, FailedToAuth)
 {
-    Message("Failed to initialize encryption.");
-    SetGameState(GAMESTATE_DISCONNECTED);
+    samp->Message("Failed to initialize encryption.");
+    samp->SetGameState(GAMESTATE_DISCONNECTED);
 }
 DEFPAK(203, AimSync)
 {
     
 }
+DEFPAK(205, PlayerStatsSync)
+{
+    
+}
 DEFPAK(207, PlayerSync)
 {
-    if(GetGameState() != GAMESTATE_CONNECTED) return;
-    Message("Player syncing...");
+    if(samp->GetGameState() != GAMESTATE_CONNECTED) return;
+    samp->Message("Player syncing...");
     
     RakNet::BitStream bsPlayerSync((unsigned char *)pak->data, pak->length, false);
     
@@ -226,7 +230,7 @@ DEFPAK(207, PlayerSync)
 
 DEFPAK(208, MarkerSync)
 {
-    if(GetGameState() != GAMESTATE_CONNECTED) return;
+    if(samp->GetGameState() != GAMESTATE_CONNECTED) return;
 
     uint8_t bytePacketID;
     uint32_t nPlayers;

@@ -23,8 +23,7 @@
 
 
 #define SVAR(_var)                  (char)(sizeof(_var)-1)
-#define DEFPAK(__id, __name)        static const unsigned char ID_##__name = (unsigned char)__id; void SAMPNet::Process_##__name(Packet* pak)
-#define CLSPAK(__name)              void Process_##__name(Packet* pak)
+#define DEFPAK(__id, __name)        static const unsigned char ID_##__name = (unsigned char)__id; static void Process_##__name(Packet* pak)
 #define PROCPAK(__name)             case ID_##__name: Process_##__name(pak); break
 
 struct ServerVariables
@@ -77,17 +76,6 @@ public:
     void                            ResetVariables();
     void                            InitializeFromVars();
 
-                                    CLSPAK(AuthKey);
-                                    CLSPAK(ConnectionAttemptFailed);
-                                    CLSPAK(ConnectionNoFree);
-                                    CLSPAK(ConnectionDisconnected);
-                                    CLSPAK(ConnectionLost);
-                                    CLSPAK(ConnectionAccepted);
-                                    CLSPAK(FailedToAuth);
-                                    CLSPAK(AimSync);
-                                    CLSPAK(PlayerSync);
-                                    CLSPAK(MarkerSync);
-
     inline void                     SetHostname(const char* name) { snprintf(m_szHostName, sizeof(m_szHostName), "%s", name); };
     inline RakClientInterface*      GetRakClient() { return m_pRakClient; };
     inline int                      GetGameState() { return m_nGameState; }
@@ -96,7 +84,7 @@ public:
     inline CVector*                 GetWorldBorderMax() { return m_vecWorldBorderMax; }
     inline ServerVariables&         GetServerVars() { return m_vars; }
 
-private:
+public:
     bool                            m_bStartedForConnecting;
     char                            m_szHostName[0xFF];
     char                            m_szIP[0x7F];

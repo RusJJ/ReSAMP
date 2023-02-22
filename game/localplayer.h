@@ -6,7 +6,7 @@
 #include <gtasa.h>
 #include <sampnet/samp_syncdata.h>
 
-#define WORLDBORDER_FORCESPEED 0.8f
+#define WORLDBORDER_FORCESPEED 0.4f
 
 class CRemotePlayer;
 
@@ -47,6 +47,7 @@ public:
     static uint8_t              m_byteLastInteriorId;
     static bool                 m_bWasted;
     static bool                 m_bClassChangeRequested;
+    static float                m_fDrunkLevel;
     
 public:
     static CRemotePlayer*       m_pRemote;

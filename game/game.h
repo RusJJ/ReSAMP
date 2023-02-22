@@ -108,6 +108,7 @@ public:
     static void DropEveryoneFromVehicle(CVehicle*);
     static void UpdateGameMatrix(CMatrix*);
     static void SetVehiclePlate(CVehicle*, const char*);
+    static float GetFPS();
 
     static inline uint32_t GetTick()
     {

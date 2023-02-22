@@ -20,6 +20,7 @@ uint16_t CLocalPlayer::m_nLastSAMPVehId = 0xFFFF;
 uint8_t CLocalPlayer::m_byteLastInteriorId = 0;
 bool CLocalPlayer::m_bWasted = false;
 bool CLocalPlayer::m_bClassChangeRequested = false;
+float CLocalPlayer::m_fDrunkLevel = 0;
 
 short CLocalPlayer::m_nChosenClassId = 0;
 CRemotePlayer* CLocalPlayer::m_pRemote = NULL;
@@ -149,7 +150,27 @@ void CLocalPlayer::Update()
             m_bWasInCar = false;
         }
         SendSyncData_OnFoot();
-        CheckWorldBorders();
+    }
+    
+    CheckWorldBorders();
+    
+    if(m_fDrunkLevel > 0)
+    {
+        m_fDrunkLevel -= 0.001f * Game::GetFPS();
+        if(m_fDrunkLevel > 2000)
+        {
+            m_pEntity->m_pPlayerData->m_nDrunkenness = (uint8_t)(((m_fDrunkLevel-2000) * 255.0f) / (48000.0f));
+            if(m_pEntity->m_pPlayerData->m_nDrunkenness == 0) m_pEntity->m_pPlayerData->m_nDrunkenness = 1;
+            
+            if(m_fDrunkLevel > 5000)
+            {
+                // hud
+            }
+        }
+        else
+        {
+            m_pEntity->m_pPlayerData->m_nDrunkenness = 0;
+        }
     }
 }
 
@@ -256,19 +277,23 @@ uint16_t CLocalPlayer::GetMyKillerID()
 
 void CLocalPlayer::CheckWorldBorders()
 {
-    if(!m_byteLastInteriorId) return;
-    CVector& pos = m_pEntity->GetPosition();
+    if(m_byteLastInteriorId != 0) return;
     
+    CVector* ppos;
+    if(m_pEntity->m_pVehicle) ppos = &m_pEntity->m_pVehicle->GetPosition();
+    else ppos = &m_pEntity->GetPosition();
+    
+    CVector& pos = *ppos; // lazy. it will be the same in asm
     if(pos.x > samp->GetWorldBorderMax()->x || pos.x < samp->GetWorldBorderMin()->x ||
        pos.y > samp->GetWorldBorderMax()->y || pos.y < samp->GetWorldBorderMin()->y)
     {
          float angle = atan2(pos.y - m_vecWorldBorderCenter.y, pos.x - m_vecWorldBorderCenter.x);
-         
-         CVector vecAngled = CVector(WORLDBORDER_FORCESPEED * -(90.0f - angle) / 90.0f, WORLDBORDER_FORCESPEED * -(90.0f - angle) / 90.0f, 0.001f);
+         CVector vecAngled = CVector(-WORLDBORDER_FORCESPEED * cos(angle), -WORLDBORDER_FORCESPEED * sin(angle), 0.5f * WORLDBORDER_FORCESPEED);
          
          if(m_pEntity->m_PedFlags.bIsStanding)
          {
-             pos.z += 0.03f;
+             pos.z += 0.04f;
+             m_pEntity->FlushTasks();
          }
          m_pEntity->m_vecMoveSpeed = vecAngled;
          
