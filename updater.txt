@@ -1,0 +1,3 @@
+// No, this is not an updated file!
+
+myself:1.0.1:https://raw.githubusercontent.com/RusJJ/ReSAMP/main/build.ps1
