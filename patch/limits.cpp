@@ -30,7 +30,7 @@ CBaseModelInfo* AddAtomicModel(int modelId)
     int nCount = *g_pnAddedAtomicModels;
     ++*g_pnAddedAtomicModels;
     CBaseModelInfo* modelInfo = &g_pAtomicModelsInfo[nCount];
-    ((void(*)(CBaseModelInfo*))(*(uintptr_t*)(modelInfo->vtable + 0x1C)))(modelInfo);
+    ((void(*)(CBaseModelInfo*))(*(uintptr_t*)(modelInfo->vtable() + 0x1C)))(modelInfo);
     ms_modelInfoPtrs[modelId] = modelInfo;
     return modelInfo;
 }
@@ -40,7 +40,7 @@ CBaseModelInfo* AddPedModel(int modelId)
     int nCount = *g_pnAddedPedModels;
     ++*g_pnAddedPedModels;
     CBaseModelInfo* modelInfo = &g_pAtomicPedModelsInfo[nCount];
-    ((void(*)(CBaseModelInfo*))(*(uintptr_t*)(modelInfo->vtable + 0x1C)))(modelInfo);
+    ((void(*)(CBaseModelInfo*))(*(uintptr_t*)(modelInfo->vtable() + 0x1C)))(modelInfo);
     ms_modelInfoPtrs[modelId] = modelInfo;
     return modelInfo;
 }
@@ -63,27 +63,27 @@ void PatchTheGame()
     aml->Redirect(aml->GetSym(hGTASA, "_ZN6CWorld28FindPlayerSlotWithPedPointerEPv"), (uintptr_t)FindPlayerSlotWithPedPointer);
 
     // Atomic Models
-    g_pAtomicModelsInfo = new CBaseModelInfo[ATOMIC_MODELS_INFO];
+    g_pAtomicModelsInfo = New<CBaseModelInfo>(ATOMIC_MODELS_INFO);
     void (*CBaseModelInfoInitializer)(CBaseModelInfo*);
     SET_TO(CBaseModelInfoInitializer, aml->GetSym(hGTASA, "_ZN14CBaseModelInfoC2Ev"));
     uintptr_t CBaseModelInfoVTable = pGTASA + 0x667454;
     for(int i = 0; i < ATOMIC_MODELS_INFO; ++i)
     {
         CBaseModelInfoInitializer(&g_pAtomicModelsInfo[i]);
-        g_pAtomicModelsInfo[i].vtable = CBaseModelInfoVTable;
+        g_pAtomicModelsInfo[i].vtable() = CBaseModelInfoVTable;
     }
     SET_TO(ms_modelInfoPtrs, aml->GetSym(hGTASA, "_ZN10CModelInfo16ms_modelInfoPtrsE"));
     SET_TO(g_pnAddedAtomicModels, pGTASA + 0x820738);
     aml->Redirect(aml->GetSym(hGTASA, "_ZN10CModelInfo14AddAtomicModelEi"), (uintptr_t)AddAtomicModel);
 
     // Atomic Ped Models
-    g_pAtomicPedModelsInfo = new CPedModelInfo[ATOMIC_PEDMODELS_INFO];
+    g_pAtomicPedModelsInfo = New<CPedModelInfo>(ATOMIC_PEDMODELS_INFO);
     memset(g_pAtomicPedModelsInfo, 0, sizeof(CPedModelInfo) * ATOMIC_PEDMODELS_INFO);
     uintptr_t CBasePedModelInfoVTable = pGTASA + 0x667668;
     for(int i = 0; i < ATOMIC_PEDMODELS_INFO; ++i)
     {
         CBaseModelInfoInitializer(&g_pAtomicPedModelsInfo[i]);
-        g_pAtomicPedModelsInfo[i].vtable = CBasePedModelInfoVTable;
+        g_pAtomicPedModelsInfo[i].vtable() = CBasePedModelInfoVTable;
     }
     SET_TO(g_pnAddedPedModels, pGTASA + 0x915FC8);
     aml->Redirect(aml->GetSym(hGTASA, "_ZN10CModelInfo11AddPedModelEi"), (uintptr_t)AddPedModel);
@@ -163,5 +163,5 @@ void DoPoolsPatches()
     // TXDs (not working?)
     aml->Write(pGTASA + 0x5D3A68, (uintptr_t)"\x42\xF2\x10\x70", 4);
     aml->Write(pGTASA + 0x5D3A6C, (uintptr_t)"\x42\xF2\x10\x75", 4);
-    aml->Write(pGTASA + 0x5D3A5A, (uintptr_t)"\x48\xF6\c80\x30\xC0\xF2\x08\x00", 8);
+    aml->Write(pGTASA + 0x5D3A5A, (uintptr_t)"\x48\xF6\x80\x30\xC0\xF2\x08\x00", 8);
 }

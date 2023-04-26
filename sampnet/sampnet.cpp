@@ -97,8 +97,8 @@ DEFPAK(33, ConnectionLost)
 }
 DEFPAK(34, ConnectionAccepted)
 {
-    unsigned short nMyPlayerID;
-    unsigned int uiChallenge;
+    uint16_t nMyPlayerID;
+    uint32_t uiChallenge;
 
     samp->SetGameState(GAMESTATE_AWAIT_JOIN);
 
@@ -110,18 +110,18 @@ DEFPAK(34, ConnectionAccepted)
     bsSuccAuth.Read(uiChallenge);
 
     snprintf(samp->m_szCurrentPlayerName, sizeof(samp->m_szCurrentPlayerName), "%s", samp->m_szPlayerName);
-    char bNameLen = (char)strlen(samp->m_szCurrentPlayerName);
+    uint8_t byteNameLen = (uint8_t)strlen(samp->m_szCurrentPlayerName);
     CLocalPlayer::PutMeInPool(nMyPlayerID);
 
     RakNet::BitStream bsSend;
     bsSend.Write(NETGAME_VERSION);
     bsSend.Write((char)0x01); // Should be 1 char!
-    bsSend.Write(bNameLen);
-    bsSend.Write(samp->m_szCurrentPlayerName, bNameLen);
+    bsSend.Write(byteNameLen);
+    bsSend.Write(samp->m_szCurrentPlayerName, byteNameLen);
     bsSend.Write(uiChallenge ^ NETGAME_VERSION);
     bsSend.Write(SVAR(AUTH_BS));
     bsSend.Write(AUTH_BS, SVAR(AUTH_BS));
-    bsSend.Write(SVAR(SAMP_VERSION));
+    bsSend.Write(SVAR(SAMP_VERSION)); // Useless!
     bsSend.Write(SAMP_VERSION, SVAR(SAMP_VERSION));
     samp->m_pRakClient->RPC((int*)&RPC_ClientJoin, &bsSend, HIGH_PRIORITY, RELIABLE, 0, false, UNASSIGNED_NETWORK_ID, NULL);
 }
@@ -413,4 +413,19 @@ void SAMPNet::InitializeFromVars()
     Game::SetWorldTime(m_vars.m_byteWorldHour, m_vars.m_byteWorldMinute);
     if(m_vars.m_bDisableEnterExits) Game::ToggleEnterExits(false);
     Game::SetGravity(m_vars.m_fGravity);
+}
+
+const char* SAMPNet::GetRejectedString(uint8_t rejectReason)
+{
+    switch(rejectReason)
+    {
+        case 0: return "Ignore";
+        case 1: return "Version mismatch";
+        case 2: return "Bad name";
+        case 3: return "Bad mod code";
+        case 4: return "No player slot";
+        case 5: return "Success";
+        default: break;
+    }
+    return "Unknown";
 }

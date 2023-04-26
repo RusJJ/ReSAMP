@@ -1,7 +1,11 @@
 #include <mod/amlmod.h>
 #include <mod/logger.h>
 #include <samp.h>
+#include <third/iconv/iconv.h>
 
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include "samprpc.h"
 #include "sampnet.h"
 #include <game/game.h>
@@ -14,6 +18,8 @@
 #define RAKDATA(_PARAMS) int dataLen = ((int)(_PARAMS->numberOfBitsOfData) / 8) + 1; RakNet::BitStream bsData((unsigned char*)(_PARAMS->input), dataLen, false)
 #define RAKDATA_DBG(_NAME) char* out = new char[dataLen+1] {0}; bsData.Read(out, dataLen); for(int i = 0; i < dataLen; ++i) logger->Info(#_NAME"[%d]=0x%02X", i, out[i]); delete[] out;
 #define GUARDSTACK(_VARIN, _VAROF) if(_VARIN >= sizeof(_VAROF)) _VARIN = sizeof(_VAROF)-1
+
+
 
 
 ONRPC(SetPlayerName)
@@ -318,6 +324,69 @@ ONRPC(DialogBox)
     
     logger->Info("DialogBox");
     
+    uint8_t byteLen;
+    char tmp[257]; tmp[0] = ' '; char* inbuf = (char*)tmp;
+    char* outbuf = NULL;
+    size_t inbytesleft = 0, outbytesleft = 0;
+    
+    iconv_t cd;
+    
+    bsData.Read(dialogui->m_nCurrentDialogID);
+    bsData.Read(dialogui->m_nCurrentDialogStyle);
+    
+    // Title
+    bsData.Read(byteLen);
+    bsData.Read(&tmp[1], byteLen);
+    tmp[(int)byteLen+1] = 0; inbytesleft = byteLen; outbytesleft = 255;
+    outbuf = dialogui->m_szDialogTitle-1;
+    cd = iconv_open("UTF-8", "CP1251");
+    if(cd != (iconv_t)-1)
+    {
+        iconv(cd, (char**)&inbuf, &inbytesleft, (char**)&outbuf, &outbytesleft);
+        iconv_close(cd);
+    }
+    //logger->Info("title %s", dialogui->m_szDialogTitle);
+    for(int i = 0; i < outbytesleft; ++i)
+    {
+        logger->Info("Title[%d]=0x%02X (%c)", i, dialogui->m_szDialogTitle[i], dialogui->m_szDialogTitle[i]);
+    }
+    
+    // Left button
+    bsData.Read(byteLen);
+    bsData.Read(&tmp[1], byteLen);
+    tmp[(int)byteLen+1] = 0; inbytesleft = byteLen; outbytesleft = 255;
+    outbuf = dialogui->m_szDialogButton[0];
+    cd = iconv_open("UTF-8", "CP1251");
+    if(cd != (iconv_t)-1)
+    {
+        iconv(cd, (char**)&inbuf, &inbytesleft, (char**)&outbuf, &outbytesleft);
+        iconv_close(cd);
+    }
+    
+    // Right button
+    bsData.Read(byteLen);
+    bsData.Read(&tmp[1], byteLen);
+    tmp[(int)byteLen+1] = 0; inbytesleft = byteLen; outbytesleft = 255;
+    outbuf = dialogui->m_szDialogButton[1];
+    cd = iconv_open("UTF-8", "CP1251");
+    if(cd != (iconv_t)-1)
+    {
+        iconv(cd, (char**)&inbuf, &inbytesleft, (char**)&outbuf, &outbytesleft);
+        iconv_close(cd);
+    }
+    
+    // Body
+    bsData.Read(byteLen);
+    bsData.Read(&tmp[1], byteLen);
+    tmp[(int)byteLen+1] = 0; inbytesleft = byteLen; outbytesleft = 255;
+    outbuf = dialogui->m_szDialogBody;
+    cd = iconv_open("UTF-8", "CP1251");
+    if(cd != (iconv_t)-1)
+    {
+        iconv(cd, (char**)&inbuf, &inbytesleft, (char**)&outbuf, &outbytesleft);
+        iconv_close(cd);
+    }
+    
     dialogui->SetDrawable(true);
 }
 ONRPC(SetPlayerArmour)
@@ -423,11 +492,11 @@ ONRPC(ClientMessage)
     
     bsData.Read(color);
     bsData.Read(byteLen);
-    GUARDSTACK(byteLen, msg);
+    //GUARDSTACK(byteLen, msg); // 512 is bigger than max(uint8_t)=255!
     bsData.Read(msg, byteLen);
     msg[byteLen] = 0;
     
-    samp->Message(msg);
+    samp->Message("ClientMessage: %s", msg);
 }
 ONRPC(NumberPlate)
 {
@@ -474,6 +543,15 @@ ONRPC(RequestSpawn)
     
     CLocalPlayer::Spawn();
     spawnui->SetDrawable(false);
+}
+ONRPC(ConnectionRejected)
+{
+    RAKDATA(params);
+    
+    uint8_t byteReason;
+    bsData.Read(byteReason);
+    
+    samp->Message("ConnectionRejected=%d", (int)byteReason);
 }
 ONRPC(ServerJoin)
 {
@@ -740,6 +818,7 @@ void SAMPRPC::DoRPCs(bool bUnregister)
     BINDRPC(NumberPlate); // 123
     BINDRPC(RequestClass); // 128
     BINDRPC(RequestSpawn); // 129
+    BINDRPC(ConnectionRejected); // 130
     BINDRPC(ServerJoin); // 137
     BINDRPC(ServerQuit); // 138
     BINDRPC(InitGame); // 139

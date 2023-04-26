@@ -7,8 +7,9 @@
 #include <sampnet/sampnet.h>
 #include <sampnet/samp_netencr.h>
 #include <sampnet/samprpc.h>
+#include <linux/input.h>
 
-#define SAMP_VERSION           "0.3.7-R4"
+#define SAMP_VERSION           "0.3.7"
 
 // SAMP LIMITS
 #define MAX_PLAYERS             1004
@@ -47,7 +48,7 @@ inline size_t __strlen(const char *str)
     return (s - str);
 }
 
-#pragma pack(1)
+#pragma pack(push, 1)
 struct VehicleData
 {
     unsigned short VehicleID;

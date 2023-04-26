@@ -43,10 +43,10 @@ inline float DistanceBetweenPoints(float x1, float y1, float x2, float y2)
 {
     return sqrtf(Twice(x1 - x2) + Twice(y1 - y2));
 }
-inline float DistanceBetweenPoints(CVector& a1, CVector& a2)
+/*inline float DistanceBetweenPoints(CVector& a1, CVector& a2)
 {
     return sqrtf(Twice(a1.x - a2.x) + Twice(a1.y - a2.y) + Twice(a1.z - a2.z));
-}
+}*/
 inline float DistanceBetweenPoints(float x1, float y1, float z1, CVector& a2)
 {
     return sqrtf(Twice(x1 - a2.x) + Twice(y1 - a2.y) + Twice(z1 - a2.z));

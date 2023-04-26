@@ -83,6 +83,8 @@ public:
     inline CVector2D*               GetWorldBorderMin() { return &m_vecWorldBorderMin; }
     inline CVector2D*               GetWorldBorderMax() { return &m_vecWorldBorderMax; }
     inline ServerVariables&         GetServerVars() { return m_vars; }
+    
+    static const char*              GetRejectedString(uint8_t rejectReason);
 
 public:
     bool                            m_bStartedForConnecting;

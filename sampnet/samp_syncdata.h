@@ -3,7 +3,7 @@
 
 #include <gtasa.h>
 
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct PLAYER_SPAWN_INFO
 {

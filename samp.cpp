@@ -20,8 +20,9 @@ extern "C" void InGameLoop()
     if(!samp)
     {
         SAMPNet::StartSAMP();
-        samp->Connect("185.128.106.195", 7777);
+        samp->Connect("185.128.106.195", 7777); // My own
         //samp->Connect("46.174.52.246", 7777); // Drift
+        //samp->Connect("193.84.90.23", 7777); // DM
         return;
     }
 
